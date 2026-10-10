@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEEDF3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#120E1C" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LMF 2026">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>LMF 2026 Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Big+Shoulders+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Layout: a pocket running order. Hour blocks are printed sheets of rows; poster numerals carry the time; one red-rose accent marks your picks. */
+:root{
+  --bg:#EEEDF3;        /* pale slate paper, biased toward the ink */
+  --surface:#FFFFFF;
+  --ink:#1C1630;       /* night plum ink */
+  --muted:#5F5975;
+  --line:#DCD9E6;
+  --rose:#C8173B;      /* Lancashire red rose */
+  --rose-soft:#FBE6EB;
+  --gold:#E0A100;      /* stage light: on now */
+  --gold-soft:#FFF3D1;
+  --join:#1E7A58; --join-soft:#DDF2E8;
+  --on-rose:#FFFFFF;
+  --display:"Big Shoulders Display", "Avenir Next Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#120E1C; --surface:#1D1729; --ink:#F1EDF8; --muted:#A79FBC; --line:#2F2742;
+    --rose:#FF5872; --rose-soft:#3A1828; --gold:#FFC23D; --gold-soft:#382B10; --join:#5BD3A3; --join-soft:#15322A; --on-rose:#1A0710;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#120E1C; --surface:#1D1729; --ink:#F1EDF8; --muted:#A79FBC; --line:#2F2742;
+  --rose:#FF5872; --rose-soft:#3A1828; --gold:#FFC23D; --gold-soft:#382B10; --join:#5BD3A3; --join-soft:#15322A; --on-rose:#1A0710;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 150px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%;min-height:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding:8px 16px 6px;border-bottom:1px solid var(--line);transition:transform .22s ease-out}
+body.hide-hdr header.top{transform:translateY(calc(-100% - env(safe-area-inset-top,0px)))}
+@media (prefers-reduced-motion:reduce){header.top{transition:none}}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{font-family:var(--display);font-weight:800;font-size:19px;line-height:1;margin:0;letter-spacing:-.01em}
+.brand h1 span{color:var(--rose)}
+.brand small{color:var(--muted);font-size:12px}
+.search{margin-top:7px;position:relative}
+.search input{width:100%;padding:8px 40px 8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:16px}
+.search input:focus{border-color:var(--rose);outline:none}
+.search .clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;width:32px;height:32px;font-size:20px;color:var(--muted);display:none}
+.search.has .clear{display:block}
+.days{display:flex;gap:6px;overflow-x:auto;margin:7px -16px 0;padding:0 16px 2px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:4px 10px;text-align:center;position:relative}
+.day b{display:block;font-family:var(--display);font-size:16px;line-height:1.1;white-space:nowrap}
+.day.today::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--rose)}
+.day i{font-style:normal;font-size:11px;color:var(--muted)}
+.day.pre{opacity:.75}
+.day[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.day[aria-pressed="true"] i{color:inherit;opacity:.8}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:6px -16px 0;padding:0 16px 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:3px 11px;font-size:13px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--rose);border-color:var(--rose);color:var(--on-rose)}
+.chip.now[aria-pressed="false"]{border-color:var(--rose);color:var(--rose);font-weight:700}
+
+main{padding:0 12px calc(110px + env(safe-area-inset-bottom,0px));max-width:720px;margin:0 auto}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--ink);color:var(--bg);border-radius:10px;padding:6px 10px;margin:8px 0 2px;font-size:13px}
+.banner button{border:0;background:transparent;color:inherit;font-weight:700;text-decoration:underline;padding:4px}
+.hour{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--stick,0px));z-index:5;background:var(--bg);display:flex;align-items:baseline;gap:8px;padding:8px 2px 3px;transition:top .22s ease-out}
+.hour h2{margin:0;font-family:var(--display);font-weight:800;font-size:22px;line-height:1;letter-spacing:-.02em}
+.hour span{color:var(--muted);font-size:12px}
+.dayhead h2{font-size:22px}
+.gig{display:grid;grid-template-columns:50px 1fr 40px;gap:8px;align-items:start;background:var(--surface);border-radius:12px;padding:8px 2px 8px 10px;margin:4px 0;border:1.5px solid transparent}
+.gig.on{border-color:var(--gold)}
+.gig.past{opacity:.5}
+.gig.starred{border-color:var(--rose);background:linear-gradient(90deg,var(--rose-soft),var(--surface) 60%)}
+.gig.ghost{opacity:.7;border-style:dashed;border-color:var(--line)}
+.t{font-family:var(--display);line-height:1.1}
+.t b{display:block;font-size:17px;font-weight:700}
+.t span{font-size:12px;color:var(--muted);white-space:nowrap}
+.b{min-width:0}
+.b h3{margin:0;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.b .d{margin:1px 0 0;color:var(--muted);font-size:13px;line-height:1.3}
+.b .v{margin:3px 0 0;font-size:13px;font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.b .v button{border:0;background:none;padding:0;font-weight:700;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.b .v em{font-style:normal;font-weight:400;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;align-items:center}
+.tag{font-size:11px;border-radius:5px;padding:1px 6px;font-weight:700}
+.tag.join{background:var(--join-soft);color:var(--join)}
+.tag.live{background:var(--gold);color:#1C1630}
+.tag.book{background:var(--ink);color:var(--bg);text-decoration:none}
+.tag.clash{background:var(--rose);color:var(--on-rose)}
+.crew{display:inline-flex;gap:3px}
+.crew i{font-style:normal;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--ink);color:var(--bg)}
+.star{border:0;background:none;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;margin-top:-6px}
+.star svg{width:22px;height:22px;fill:none;stroke:var(--muted);stroke-width:1.8}
+.star[aria-pressed="true"] svg{fill:var(--rose);stroke:var(--rose)}
+.star[aria-pressed="true"]{animation:pop .25s ease-out}
+@keyframes pop{50%{transform:scale(1.25)}}
+@media (prefers-reduced-motion:reduce){.star[aria-pressed="true"]{animation:none}}
+.gap{margin:1px 0 1px 68px;font-size:12px;color:var(--muted)}
+.gap.bad{color:var(--rose);font-weight:700}
+.empty{text-align:center;padding:48px 16px;color:var(--muted)}
+.empty h3{color:var(--ink);font-family:var(--display);font-size:24px;margin:0 0 6px}
+.vlist button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:var(--surface);border:0;border-radius:12px;padding:10px 12px;margin:4px 0}
+.vlist b{font-size:16px}
+.vlist small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.vlist .n{font-family:var(--display);font-size:20px;font-weight:800;color:var(--rose)}
+.panel{background:var(--surface);border-radius:14px;padding:14px;margin:12px 0}
+.panel h3{margin:0 0 6px;font-family:var(--display);font-size:22px}
+.panel p{margin:4px 0 10px;color:var(--muted);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:var(--ink);color:var(--bg)}
+.btn.alt{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.rose{background:var(--rose);color:var(--on-rose)}
+.panel input[type=text],.panel textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);font:inherit;font-size:16px}
+.panel textarea{min-height:90px;resize:vertical}
+.friend{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.friend:first-of-type{border-top:0}
+.friend .who{display:flex;align-items:center;gap:8px}
+.friend .who i{font-style:normal;font-size:12px;font-weight:700;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--bg)}
+.friend button{border:0;background:none;color:var(--rose);font-weight:700;padding:6px}
+.toggle{display:flex;align-items:center;gap:10px;font-size:15px;margin:10px 0}
+.toggle input{width:20px;height:20px;accent-color:var(--rose)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 8px max(24px, calc(env(safe-area-inset-bottom,0px) + 12px))}
+nav.tabs button{flex:1;border:0;background:none;padding:8px 4px;min-height:52px;border-radius:10px;font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px}
+nav.tabs svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}
+nav.tabs button[aria-current="page"]{color:var(--rose)}
+nav.tabs .badge{font-family:var(--display);}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.gig .b{cursor:pointer}
+.more{font-size:12px;font-weight:700;color:var(--rose)}
+.stage{font-size:12px;font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+.tag.chg{background:var(--gold-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--gold)}
+.vhead{padding:4px 0 0}
+.vctl{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--stick,0px));z-index:6;background:var(--bg);margin:0 -12px;padding:2px 12px 6px;border-bottom:1px solid var(--line);transition:top .22s ease-out}
+.vctl .days{margin-top:2px}
+.back{border:0;background:none;padding:2px 0;color:var(--rose);font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:4px}
+.vhead h2{margin:0;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.05;letter-spacing:-.02em}
+.vhead p{margin:0 0 4px;color:var(--muted);font-size:13px}
+.vctl .days,.vctl .chips{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px}
+.vlist .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:6px;vertical-align:middle}
+.vfind{margin:12px 0 0}
+.scrim{position:fixed;inset:0;background:rgba(18,14,28,.5);z-index:50;opacity:0;transition:opacity .2s}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--surface);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 20px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s ease-out;max-width:720px;margin:0 auto}
+.sheet.open{transform:none}.scrim.open{opacity:1}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim{transition:none}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet .x{position:absolute;right:10px;top:10px;border:0;background:var(--bg);width:36px;height:36px;border-radius:50%;font-size:20px;line-height:1}
+.sheet .when{font-family:var(--display);font-size:18px;font-weight:700;color:var(--rose);margin:4px 48px 0 0}
+.sheet h2{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.05;margin:4px 0 6px;letter-spacing:-.02em;overflow-wrap:anywhere}
+.sheet .d{color:var(--muted);margin:0 0 10px;font-size:16px}
+.sheet .where{display:flex;width:100%;text-align:left;justify-content:space-between;align-items:center;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;margin:10px 0}
+.sheet .where b{font-size:17px}.sheet .where small{display:block;color:var(--muted);font-size:13px}
+.sheet .where span.go{color:var(--rose);font-weight:700;font-size:14px;white-space:nowrap}
+.sheet .act{display:flex;gap:8px;margin:12px 0}
+.sheet .act .btn{flex:1;text-align:center;text-decoration:none;padding:13px}
+.sheet h4{margin:20px 0 6px;font-size:15px}
+.sheet .note{font-size:14px;margin:6px 0;color:var(--muted)}
+.sheet .note.bad{color:var(--rose);font-weight:700}
+.alt{display:grid;grid-template-columns:76px 1fr auto;gap:10px;align-items:center;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:11px 0}
+.alt:first-of-type{border-top:0}
+.alt b{font-family:var(--display);font-size:17px;line-height:1.1}
+.alt b small{display:block;font-family:var(--body);font-size:12px;color:var(--muted);font-weight:400}
+.alt .vn{font-size:15px}.alt .vn em{font-style:normal;color:var(--muted)}
+.alt .on{color:var(--rose)}
+.alt.past{opacity:.5}
+.gig.cx h3{text-decoration:line-through;text-decoration-thickness:2px}
+.gig.cx{opacity:.6}
+.tag.cxl{background:var(--rose);color:var(--on-rose)}
+
+.seg{display:inline-flex;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:2px;margin:8px 0 2px}
+.seg button{border:0;background:none;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.ttwrap{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ttwrap small{color:var(--muted);font-size:12px}
+.tt{position:relative;overflow:auto;-webkit-overflow-scrolling:touch;margin:4px -12px 0;height:calc(100dvh - var(--stick,0px) - 150px - env(safe-area-inset-bottom,0px));min-height:300px;background:var(--bg);border-top:1px solid var(--line);overscroll-behavior:contain}
+.tt-in{position:relative}
+.tt-row{display:flex;height:46px;border-bottom:1px solid var(--line)}
+.tt-row.first{border-top:1.5px solid var(--line)}
+.tt-name{position:sticky;left:0;z-index:3;flex:0 0 104px;width:104px;background:var(--bg);border:0;border-right:1.5px solid var(--line);text-align:left;padding:3px 6px 3px 10px;font-size:12px;line-height:1.15;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.tt-name b{font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tt-name span{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-name.cont b{display:none}
+.tt-track{position:relative;flex:0 0 auto}
+.tt-head{position:sticky;top:0;z-index:4;display:flex;height:24px;background:var(--bg);border-bottom:1px solid var(--line)}
+.tt-head .tt-corner{position:sticky;left:0;z-index:5;flex:0 0 104px;background:var(--bg);border-right:1.5px solid var(--line)}
+.tt-hr{position:absolute;top:0;height:24px;font-family:var(--display);font-weight:700;font-size:13px;padding:4px 0 0 4px;border-left:1px solid var(--line)}
+.tt-grid{position:absolute;top:0;bottom:0;border-left:1px dashed var(--line);opacity:.7}
+.tt-b{position:absolute;top:4px;bottom:4px;border:0;border-radius:7px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);padding:3px 6px;text-align:left;overflow:hidden;font-size:12px;line-height:1.15;color:var(--ink)}
+.tt-b b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.tt-b span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:11px}
+.tt-b.join{box-shadow:inset 0 0 0 1.5px var(--join);background:var(--join-soft)}
+.tt-b.picked{background:var(--rose);box-shadow:none;color:var(--on-rose)}.tt-b.picked span{color:var(--on-rose);opacity:.85}
+.tt-b.live{box-shadow:inset 0 0 0 2.5px var(--gold)}
+.tt-b.cx{opacity:.45}.tt-b.cx b{text-decoration:line-through}
+.tt-b.dim{opacity:.22}
+.tt-now{position:absolute;top:0;bottom:0;width:2px;background:var(--rose);z-index:2;pointer-events:none}
+.tt-now::before{content:"Now";position:absolute;top:4px;left:4px;font-size:10px;font-weight:700;color:var(--rose);background:var(--bg);padding:0 3px;border-radius:3px}
+input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.tt-name.cont{border-top:0}
+.tt-row.cont{border-top:0}
+
+/* ---- running-order rows (replaces separate cards) ---- */
+body{background:var(--bg)}
+.brand h1{font-size:24px;font-weight:900;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.brand small{white-space:nowrap}
+.brand h1 span{color:var(--rose)}
+.day b{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.02em}
+.day[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.hour{padding:12px 4px 4px}
+.hour h2{font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.dayhead h2{font-size:28px}
+.gig,.gap{background:var(--surface);margin:0}
+.gig{border:0;border-radius:0;border-bottom:1px solid var(--line);padding:10px 2px 10px 12px;grid-template-columns:58px minmax(0,1fr) 40px}
+.gap{padding:4px 12px 4px 76px;border-bottom:1px solid var(--line);margin:0}
+:is(.gig,.gap):not(:is(.gig,.gap) + :is(.gig,.gap)){border-top-left-radius:14px;border-top-right-radius:14px;margin-top:2px}
+:is(.gig,.gap):not(:has(+ :is(.gig,.gap))){border-bottom-left-radius:14px;border-bottom-right-radius:14px;border-bottom:0;margin-bottom:6px}
+.gig.on{border-color:var(--line)}
+.gig.starred{border-color:var(--line);background:var(--rose-soft)}
+.gig.ghost{border-style:solid;border-color:var(--line);opacity:.65}
+.t{font-family:var(--display);font-variant-numeric:tabular-nums;position:relative}
+.t b{font-size:21px;font-weight:800;line-height:1;letter-spacing:.01em;white-space:nowrap}
+.t span{font-family:var(--body);font-size:11.5px;display:block;margin-top:2px}
+.gig.on .t::before{content:"";position:absolute;left:-8px;top:7px;width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.b h3{font-size:16px;font-weight:700;text-wrap:balance}
+.b .v button{text-decoration-color:var(--line)}
+.more{color:var(--muted);font-weight:700}
+.star[aria-pressed="true"] svg{fill:var(--rose);stroke:var(--rose)}
+.tag.book{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.banner{background:var(--ink);color:var(--bg)}
+.vlist{display:flex;flex-direction:column}
+.vlist button{border-radius:0;margin:0;border-bottom:1px solid var(--line)}
+.vlist button:first-child{border-top-left-radius:14px;border-top-right-radius:14px}
+.vlist button:last-child{border-bottom-left-radius:14px;border-bottom-right-radius:14px;border-bottom:0}
+.vlist .n{font-family:var(--display);font-weight:900;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums}
+.vhead h2,.sheet h2{font-family:var(--display);font-weight:900;letter-spacing:.005em;text-wrap:balance}
+.vhead h2{font-size:34px}
+.sheet h2{font-size:42px;line-height:.95}
+.sheet .when{font-family:var(--display);font-weight:800;font-size:20px;color:var(--rose);font-variant-numeric:tabular-nums}
+.alt b{font-family:var(--display);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.panel h3,.empty h3{font-family:var(--display);font-weight:900;font-size:26px}
+.tt-hr{font-family:var(--display);font-weight:800;font-size:15px}
+.tt-b b{font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+nav.tabs button[aria-current="page"]{color:var(--rose)}
+nav.tabs .badge{font-family:var(--display);font-weight:800}
+.gig.cx{opacity:.55}
+
+.save{margin:12px 0 4px;font-size:14px;color:var(--muted)}
+.save.ok{color:var(--join);font-weight:700}
+.save.warn{background:var(--surface);border-radius:14px;padding:12px 14px;color:var(--ink)}
+.save.warn p{margin:0 0 10px;font-size:14px;line-height:1.4}
+.save.warn input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);font-size:14px}
+:root{padding-top:env(safe-area-inset-top,0px)}
+.install{margin-top:8px;font-size:13.5px;color:var(--muted);line-height:1.4}
+</style>
+</head>
+<body>
+<header class="top" id="hdr">
+  <div class="brand"><h1>Lancaster Music Festival <span>26</span></h1><small id="count"></small></div>
+  <div class="search" id="searchWrap">
+    <label for="q" class="sr">Search acts, venues or styles</label>
+    <input id="q" type="search" placeholder="Search acts, venues, styles…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-gramm="false" enterkeyhint="search">
+    <button class="clear" id="qClear" aria-label="Clear search">×</button>
+  </div>
+  <div class="days" id="days" role="group" aria-label="Day"></div>
+  <div class="chips" id="chips" role="group" aria-label="Filters"></div>
+</header>
+<main id="main" aria-live="polite"></main>
+<nav class="tabs" aria-label="Sections">
+  <button data-view="list" aria-current="page"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Listings</button>
+  <button data-view="venues"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Venues</button>
+  <button data-view="plan"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z"/></svg><span>My plan <span class="badge" id="planCount"></span></span></button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden></div>
+
+<script>
+const DATA = {"v":[["Storey","Lecture Theatre"],["Kanteena",""],["John O'Gaunt",""],["Gregson","Hall"],["Tite & Locke",""],["Stonewell Tap",""],["Tap House",""],["Three Mariners",""],["Borough",""],["Gregson","Olive Bar"],["Busk Stops","Aquila Pizzeria"],["Busk Stops","Accidental Brewery"],["White Cross","Main Stage"],["Gregson","Cafe Bar"],["The Pub","Outdoor stage"],["Golden Lion",""],["Bobbin",""],["Kanteena","ATIKA"],["Storey",""],["Storey","Tara Centre"],["Atticus",""],["Wagon & Horses",""],["Busk Stops","Assembly Rooms"],["White Cross","Acoustic Stage"],["Hogarth's","Main Stage"],["Busk Stops","The Body Shop"],["Busk Stops","Little Shop of Handmade Loveliness"],["Lancaster Castle","Keep"],["Jailor's Barrel","Window Spot"],["Greens",""],["Busk Stops","Runner Duck"],["Busk Stops","Stonewell Spring Deli"],["Busk Stops","Brock St Pharmacy"],["Cappuvino",""],["Royal Hotel",""],["Sun Hotel",""],["Westfield",""],["The Bull Pen",""],["Water Witch",""],["Pendle Witch",""],["Busk Stops","Pizza Margherita"],["Merchants 1688","Cellar 3"],["Storey","Printroom Cafe"],["Storey Gardens",""],["Bier & Twist",""],["Toll House Inn",""],["Lancaster Priory",""],["Ring O Bells",""],["Lancaster Castle","Chapel"],["Storey","Auditorium"],["Merchants 1688","Bar"],["Forty Five Records",""],["Storey","Ludus Dance"],["Storey","Music Room"],["Storey","Reading Room"],["Dalton Square",""],["Lancaster Castle","Courtyard"],["Marketgate",""],["Merchants 1688","Cellar 2"],["Market Square",""],["Busk Stops","Lush"],["Busk Stops","Northern Dye House"],["Quarterhouse","The Quarterhouse"],["Juke Box Shops","St John's Hospice Shop, St Nics"],["Busk Stops","Cornerstone Cafe"],["Westfield","Outside"],["Lancaster Castle","Castle Gates"],["Lancaster Castle","C Wing"],["George & Dragon",""],["Busk Stops","Assembly Arts"],["St Johns Church",""],["Lancaster Castle","A Wing"],["Kanteena","Yard"],["Escape2Make",""],["Atkinsons Upper Hall",""],["The Pub","Downstairs stage"],["Dukes","Moor Space"],["Gregson","The Reading Room (Queer by Gum Studio)"],["Old Gun Shop",""]],"a":["Talk: Running music events","Talk: Protest songs","TV Face","Gans","Talk: The classic era of music video","Your Own Stuff","Dare!","Diverted Traffic","Sam Frank","Talk: Tasting Notes","Matilda Walden","Our Mike","Molly Warburton","Sooz Blooz","Accessible Open Mic","Lauren Armiland","Eoin Feely Harp","The Baby Minerals","Alex Akiba Turner","Ruby Darbyshire","20th Century F*xes","Blake Cateris","James Candlin","Haffner (players from)","Amy Rae","Trad Folk at the Gregson","Women's Music Collective","Ska Face","Lancaster Funk Club","Blood Moon Crew","Graham Mumford Open Mic","Run It Up","Tommy Scott Duo (Space)","Harrison Rimmer Band","The Limes","Hummus","Fredrik Holm","The Nighs","Voice Workshop","Finore","Day For The Ducks","Terry Ross","Tom George","Ellie Knowles","Mackie","Contra","Jay Broome","Eurodance","Blanty","Dobbeltgjenger","Cold Fusion","Bev Whelan and Sean Paul Newman","Laure Chan","Chris Barlow","David Frederick","Ovate","TBC","Fretville","Outatime","Kristi Michele","Andrew and Kat Christie","Nicky Snell","Blanty and Mackie","Flynn Murnan","Rusty Apper","Talk: Music, Musicians and War","Matt Jones","Owen Saunders","The Glass Poppies","Chimps of The Future","Daisy Smith","Crossroad (Maz & Rex)","Joe Butler","Alphabetical Twins","Keith Mitchell & Graham Mumford","Shelly's Bane","Neil C Young Trio","Morton Betts","Tin Pan Alley","The Charm","Boogie Bill Busks","Stringman","Peter Tait","Chloe Jane Hirst","Harp and a Monkey","Contracoustic","Filthy Laugh","Leon Knight","Lunetide","The Zoffs","Rock It Man","The Convulsions","Supersonic Kicks","Moonshine Shakers","Days of Decay","Helen Kelly","The Wooly Jumpers","Silver Chamber","Mic the Mic - Mike Potter","Rachel Wyche","Bailey Moore","The 44s","Luan Luan","The Size","Listen Twice","Billy Joe The Canadian","Chapped: The Show","Mountain Ash","Jennet Device. Lancaster Witches","Heavy Bones","Mikey Kenney's Nip Hill Trio","We Three Kings","Finore Session","Brickcroft","Zopa","Jamie Walker","Mark McKenna","Idol Minds","DJ Jody Denial","Maz and the Phantasms","Alec Wares","Lancaster Growlers","District 5","Hawkmen, Dive!","The Peloton","Howling Clowns","Sold to the Sky","DJ Gregg","DeadBeat At Dawn","Teri and the Electric Sunrise","AKA Skafell","Antiks","Alassin Sane","Rocket Queen","Dull","Subtrak DJs","Forty Five & Friends","Under 5s Gamelan","Georgian Harmony Singing","Family Craft Workshop","Maja Bugge","Dhol Drum Workshops","Organ Build Workshop","Loyne School Choir","3-1-5 Health Club Zumba","Last Dan Standing","Honky Tonk Choir","Connor Walsh","The Patterers","The Beets","Lancaster City Brass","Tian Qiyi","Milnthorpe Steel Band","Harry Worth","Blooz Brothers","Lancaster Red Rose AODS","Pockets Of Resistance","Megan Ward","Padge","Charlie Bluglass","Slow for a Poet","The Kairos Collective","Commoners Choir","Phoney Ramonies","Ruth Eliza","Mirror Revelations","Laura Sandham School of Dance","Gabriella T & Jasmine T","More Music Youth Stage","County of Song - Singing workshop","Oli Heath","Kizomba Noroeste","The Empire Police","Captain Cabaret","Shake A Leg","Emmanuela Yogolelo","The Performance Studios","The 1826 Lancashire Rising","Northern Heights Aerial Dance","Hiroshima Twinkie","Chinese instrument workshop","Feminist Mouse Circus","Jennie Wren","Lois","Baybeat Streetband","William Jack","Jackson & Young","Foxglove","11th Hour","Anchor Lane","Don McColl","Thingumabob and Thingumajigs","Helen Gould","Jonny Walker","Laure Chan & Haffner","The Village Five","Stephen Roper","The Anthems!","Jamie Brewer","Early Darts","Reuben Tighe","Paul Sherwood","Sarah Jane Scouten","Gavla","Sunderland Point Sea Shanty Crew","The Deal","Harpmonix","Baybeat and Cacophony Arkestra","Native Cult","Roger Purves","Open mic with the Craic Inn","The Chatterton Massacre, 26th April 1826","Cacophany Arkestra","Origami Tsunami","James Lyons","The Cover Up","The Wannabes","Couples Therapy","Jason Mcloughlin","The Groove Cutters","Keith Mitchell","Homayoun Behi (Ewan)","Toneless Choir","Will Proctor","Lucy and the Lodger","Do You Like Worms?","Someone Elses Radio","Alex Hulme","Lancaster Music Co-op presents","Soul of the North","Young Persons Karaoke","T-Kay","Zvilnik","Slackrr","Scott Millington","OOK and The Elephant","Stompin Thompson","Paddy Rogan","Tote","Quiffless & The Ponytails","Juliet's Not Dead","Vicious Bishop","Tom Woods","Brownthwaite Pike","Hot Ashes For Trees","Micky Plankton","Life in Neon","Baton Rouge","Elena Reeve","Dos Almas","Silver Raven","Mix Tape","The Luca Brasi Group","Ellie Longton","Ned Longdon","Northern Alibi","Keaton marrs","A Celebration of Lindsay Benson","Flat Moon","Duo Stringo","Mattie Gough","Collateral","The Manfredis","Acme Bass","Adil","Adam Tutt (Telex Sun)","Sally Pepper and the Undesirables","Junk Jive","Tigers and Flies","Tiiva","Summer J","Leth","The Crux","Gypsy The Soul Of Fleetwood Mac","Good Mojo","The Flatlanders","An Evening with She Drew The Gun","Moody Brew","Woodsy and Friends Rock and Roll Band","Ibiza Classics Night - Daz Mount & Matt Turner","Harry Eley","The Rewinders","Reborn Generation","DJ Steph","Rave Against The Machine","DJ Graham Burton","Pip and Friends","Indifferent Monkey","DJ Andy Stoddon","Circus Freak","Grimesy","She Drew The Gun & Wee Lou (DJ set)","Body Percussion Workshop","Batala and local High School talent","Faye Marie","Hellen Kelly","Promethean Circus","Helen Longworth","Ollie Winder","Sun Street Stompers","Jazinfusion","Jon Dawes","BBC Musical Storyland Live","Katoush","Kazoonatics","Haydn Owen","Hellen and the Mellons","Afro-Cuban Drumming Workshop","Creative Play","Queer By Gum","Music Industry Pathways for Young People","Blue Bay","From Sound to Stillness","The Roaring Seventies","Jefferson Moore","Dom Leighton","The Brass Olives","Bush Rush","Solway Express","Blanty and Mackie Session","Blueshounds Band","Tony Cox","Country Girls Round","Graham Mumford","Tony Cooke","The Cumbrian Gaita Band","Mama Parker and The Rosettes","T J Kelly","The Section","Encrypted Love","Mike Potter","Sound Trail with Fredrik Holm","Automated","Eleanor Bennett","Becky Langan","Glyn Shipman","Matt Appleton","Sandpiper Ceilidh","Paddy Garrigan and The Stroller Priests","Mickey T's Small Town Playboys","Gregson Choirs","Georgia Railroad","Jam Buddies","Arcane Hope","Claudia Thompson","The Out and Out Blues Band","Gregson Quiz LMF Special","Matthew C. Whitaker","Alan Hempton & Friends","Sound Journey","George Barker","Mumfy & Mitch","The Balkanics","The Bluehounds","The Inquline","Susannah Clegg","Bop Gun","Espiritu Flamenco presents","Guns of Navarone","The Craic Inn","Tantrum","Dog Brainz","Diabolo and the Diabolics"],"g":[["e58d4bf0",0,1080,1200,0,0,"Discussion led by industry pro Tony Rigg",1,"https://www.skiddle.com/whats-on/Lancaster/The-Storey-/An-Introduction-to-Running-Music-Events/42677726/"],["c0f8fcef",1,1110,1185,1,0,"Can music change the world?",1,"https://www.ticketsource.com/lancastermusicfestival/t-yzgvoem"],["4efa17bb",1,1230,1275,2,1,"Post Punk Noise Rock",0,"https://kanteena.co.uk/event/gans-lmk-week/"],["5b734a55",1,1290,1365,3,1,"Post Punk/Industrial Rock",0,"https://kanteena.co.uk/event/gans-lmk-week/"],["58541629",2,1110,1185,4,0,"Discussion led by Lancaster Uni",1,"https://www.ticketsource.com/lancastermusicfestival/t-ldxrqeg"],["138edd31",2,1200,1350,5,2,"LMF special with 4 original local acts",0,""],["e73f8507",3,660,705,6,3,"An interactive show for under 5’s",1,"https://moremusic.org.uk/whats-on/dare/?fbclid=IwY2xjawTpYIVwZG9mAWV4dG4DYWVtAjEwAGJyaWQRMVlZdk1CYzcyamtQOER6MjhzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEerqwwQz78ruHqFwvnrQ1Dtz_xokntnw_U6M9SPTQXEGn97GS1BoH1maPPPiU_aem_HO2l-F8rZYV44Rctl8U0Bw"],["e73fd2b2",3,810,855,6,3,"An interactive show for under 5’s",1,"https://moremusic.org.uk/whats-on/dare/?fbclid=IwY2xjawTpYIVwZG9mAWV4dG4DYWVtAjEwAGJyaWQRMVlZdk1CYzcyamtQOER6MjhzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEerqwwQz78ruHqFwvnrQ1Dtz_xokntnw_U6M9SPTQXEGn97GS1BoH1maPPPiU_aem_HO2l-F8rZYV44Rctl8U0Bw"],["f6574f88",3,1020,1080,8,2,"Acoustic",0,""],["f480d1ce",3,1020,1140,7,4,"Music from the 1930s to the present day",0,""],["80645ccf",3,1050,1155,9,5,"Matching beer & music with Pete Brown",1,"https://www.ticketsource.com/lancastermusicfestival/t-ldxzolm"],["4341f7f9",3,1050,1080,10,6,"Academy Star 2023 Dancer/Singer",0,""],["713e249d",3,1065,1125,11,7,"Original Folk/Indie/Alt music",0,""],["4698913d",3,1080,1200,12,8,"Pop",0,""],["8ddae943",3,1080,1110,16,10,"Brilliant young harpist",0,""],["9aa2b781",3,1080,1200,14,9,"Inclusive night of karaoke and open mic",1,""],["3156934d",3,1080,1140,15,2,"Acoustic",0,""],["b83e9050",3,1080,1200,13,6,"Soulful, funky, danceable Blues",0,""],["586a6278",3,1140,1170,19,11,"Indie folk, singer songwriter",0,""],["25ff401e",3,1140,1200,18,7,"Original Acoutistic Folk artist",0,""],["af8980ca",3,1140,1260,17,4,"Funtry and North-Western",0,""],["c92301c3",3,1170,1230,20,3,"Post-Punk/New Wave",0,""],["29d8a45f",3,1170,1260,21,2,"Acoustic",0,""],["b68504a4",3,1200,1320,22,8,"Covers 80s & 90s",0,""],["0a8ff4ff",3,1200,1260,23,12,"Classical - FESTIVAL LAUNCH PARTY",0,""],["c07aed31",3,1230,1380,25,13,"Folk music session in the Cafe Bar",0,""],["5b8b66a7",3,1230,1380,26,9,"Open Mic for women & GNC musicians",0,""],["59e4833c",3,1230,1350,24,6,"Acoustic female vocalist with guitar",0,""],["93f0c821",3,1230,1350,27,14,"Ska Band playing two-tone classics",0,""],["98484cae",3,1260,1500,29,16,"Rock/Metal/Punk and everything inbetween",0,""],["705615ef",3,1260,1410,28,15,"Funk open stage",0,""],["93c1b370",3,1260,1305,31,3,"Hardcore, hard rock and pop punk",0,""],["5b73ecc3",3,1260,1350,32,17,"Singer from Sapce",0,"https://kanteena.co.uk/event/tommy-scott-duo/"],["3bc842f3",3,1260,1440,30,5,"Open Mic",1,""],["29d625c0",3,1290,1380,33,2,"High energy rock with heart felt lyrics",0,""],["8078e75e",3,1320,1365,34,3,"Energetic indie/alt-rock band",0,""],["1e6af466",3,1380,1425,35,3,"Funky, grungy odd-ball 4-piece",0,""],["6cac0640",4,660,900,36,18,"Find Your Unique Voice sound sessions",1,"https://www.ticketsource.com/lancastermusicfestival/e-pmbjeo"],["81b4c79e",4,690,780,37,2,"Indie original/covers",0,""],["dffe309b",4,690,750,38,19,"Healing voice workshop w/ Elham Kashefi",1,"https://www.ticketsource.com/lancastermusicfestival/t-rzjxaqv"],["f05415d7",4,780,840,24,5,"Acoustic",0,""],["81b4edbc",4,810,900,40,2,"Duo performing covers & originals.",0,""],["028045fa",4,810,870,39,12,"Traditional Scottish and Irish folk",0,""],["5417d6f5",4,840,885,42,20,"Acoustic",0,""],["971a7a82",4,840,870,16,22,"Brilliant young harpist",0,""],["f482c5b4",4,840,960,41,4,"Acoustic Rock/Indie Classics - Current",0,""],["d03d529c",4,840,960,43,21,"Acoustic cover singer",0,""],["3bcf26db",4,870,930,45,5,"Three piece band playing RnB & 90s",0,""],["b1a9a1e2",4,870,900,44,23,"Acoustic folk",0,""],["5a35cf77",4,900,930,16,25,"Brilliant young harpist",0,""],["31bb6bb2",4,900,960,47,3,"Taster session with live music!",1,""],["36153968",4,900,1020,46,24,"Pop Rock Indie",0,""],["c2fdff04",4,900,930,48,23,"Acoustic folk/world/storytelling",0,""],["587fbe2a",4,930,960,51,26,"Trad Flute and Guitar",0,""],["29d6b23e",4,930,1020,50,2,"Prog fusion funk rock",0,""],["2078a33f",4,930,990,52,27,"Classical contemporary - the Silk Road",0,""],["d00da8e8",4,930,990,49,12,"Alternative rock",0,""],["1ba43ea8",4,960,1080,56,29,"To Be Confirmed",0,""],["2a08188c",4,960,1050,54,28,"Solo Acoustic",0,""],["3bcf733b",4,960,1050,55,5,"Chicago Blues Band",0,""],["c41b6fa8",4,960,1080,53,4,"Lively covers from a variety of eras",0,""],["6d4e5fc4",4,990,1020,60,32,"Fiddle Duo",0,""],["1cddfd05",4,990,1020,16,31,"Brilliant young harpist",0,""],["5e9047f4",4,990,1020,59,30,"Soulful Songbird",0,""],["37560b64",4,990,1065,57,15,"Latin - Jazz - Blues - Swing",0,""],["86fde811",4,990,1050,58,23,"Acoustic Duo - Pop/Rock/Indie Covers",0,""],["e8554159",4,1020,1065,61,20,"Folk, self-penned and some traditional",0,""],["0be4014a",4,1020,1140,63,8,"Singer & multi-instrumentalist",0,""],["5e9266f9",4,1020,1050,19,30,"Indie folk, singer songwriter",0,""],["81d0eb68",4,1020,1080,22,33,"Acoustic Classics",0,""],["1e3d532d",4,1020,1140,62,34,"2 Guys, 2 Guitars, 2 Voices, One Sound!",0,""],["de2aa880",4,1020,1140,12,35,"Pop singer/songwriter",0,""],["0962155f",4,1020,1140,66,37,"Acoustic",0,""],["5574e66b",4,1020,1200,64,21,"Immersive solo singer",0,""],["dd889bbe",4,1020,1065,65,36,"War Stories with historian Martin Purdy",0,"https://www.ticketsource.com/lancastermusicfestival/t-ldxagrm"],["81b564fb",4,1050,1140,68,2,"Indie/Alternative/Rock",0,""],["97fa3227",4,1050,1110,67,7,"Latin and Flamenco Guitarist",0,""],["74637b6a",4,1065,1110,69,12,"Six piece Rock band with original songs",0,""],["37ad2a37",4,1080,1125,71,20,"Blues",0,""],["2998c7e2",4,1080,1110,80,40,"Singalong Classics, Piano Accordion",0,""],["216bb657",4,1080,1110,16,10,"Brilliant Young Harpist",0,""],["18f76b1e",4,1080,1110,81,30,"One man looping guitar and vocals",0,""],["244fd4da",4,1080,1125,76,3,"Jazz/Rock guitar",0,""],["19d10208",4,1080,1200,73,24,"Popular pop/rock duo",0,""],["90ef308c",4,1080,1170,72,28,"Acoustic Alt-Indie",0,""],["55826d53",4,1080,1140,79,1,"3 piece Indie Pop Rock",0,""],["ac5c597d",4,1080,1200,75,39,"Energetic, nostalgic, well known",0,""],["f05897de",4,1080,1170,77,5,"Energetic indie rock",0,""],["a23fa622",4,1080,1200,78,14,"Classic Rock Covers",0,""],["f485dc5e",4,1080,1200,70,4,"Folk rock, Indie and Ska tinge",0,""],["5ef1fc23",4,1080,1200,74,38,"Duo",0,""],["1e3f4724",4,1095,1155,83,33,"Indie singer-songwiter",0,""],["327d3f3c",4,1095,1200,82,6,"Looped guitarist with a soulful vibe",0,""],["755ef69c",4,1095,1155,84,36,"Modern folk - War Stories",0,"https://www.ticketsource.com/lancastermusicfestival/t-ldxagrm"],["f01e0e18",4,1110,1230,13,41,"Soulful, funky, danceable Blues",0,""],["86ff3a66",4,1110,1170,85,23,"Beatbox Duo Avec Guitar and Bass",0,""],["b1eb8644",4,1125,1185,86,42,"Indie folk rock",0,""],["328c967c",4,1125,1170,56,43,"To Be Confirmed",0,""],["5fbcbb7f",4,1140,1185,88,20,"Old time, Cajun, Balkan and more",0,""],["b9262288",4,1140,1260,87,44,"Acoustic male artist",0,""],["91efdd37",4,1140,1260,93,8,"Rock and Roll Skiffle",0,""],["d3cdbc0b",4,1140,1200,89,15,"Indie Rock",0,""],["81671c1c",4,1140,1260,92,29,"Indie Rock",0,""],["05ac991f",4,1140,1185,91,3,"Mod/Funk",0,""],["34fd0f4b",4,1140,1320,90,45,"Jukebox cover band, pop & rock covers",0,""],["c9b36c89",4,1170,1230,95,33,"Singer/Songwriter",0,""],["5ae98a1d",4,1170,1260,96,2,"Irish traditional",0,""],["45cb6589",4,1170,1260,97,46,"Progressive Metal with chamber orchestra",0,"https://www.ticketsource.com/lancastermusicfestival/t-rzjqjxg"],["de28eda7",4,1170,1290,7,35,"Music from the 1930s to the present day",0,""],["dcdd73a1",4,1170,1215,94,12,"Post-grunge four piece",0,""],["32cdc012",4,1200,1245,98,20,"Swing maestro and scat-supercat",0,""],["849bb343",4,1200,1260,103,16,"Upbeat Pop Covers & Originals Band",0,""],["dccd3b48",4,1200,1380,106,9,"Drag cabaret chaos with Ash Bestos",0,""],["0bfde179",4,1200,1410,112,13,"Join in with Finore for Trad Tunes",1,""],["df1bfe11",4,1200,1245,102,3,"Funk pop, altpop",0,""],["78ccf8f6",4,1200,1290,99,28,"Acoustic",0,""],["55e1a229",4,1200,1275,107,1,"Country Blues",0,""],["27f6986c",4,1200,1260,108,48,"Lancaster Witches Musical",0,""],["9225ade3",4,1200,1320,101,47,"Covers Oasis, Kasabian and their own",0,""],["1e450422",4,1200,1320,105,34,"High Energy Rock & Classic Hit Covers",0,""],["3bd168ea",4,1200,1260,104,5,"Originals and covers indie rock music",0,""],["522c9855",4,1200,1260,110,43,"Traditional/Celtic/folk",0,""],["0962f58b",4,1200,1320,109,37,"British blues band with bite",0,""],["66806ecf",4,1200,1275,111,14,"Balls out, fuzzed-up rock & roll",0,""],["705e423f",4,1200,1320,100,7,"Artist peforming original songs",0,""],["91838d42",4,1200,1320,67,4,"Acoustic",0,""],["0d5fd485",4,1215,1275,113,12,"Acoustic covers",0,""],["98e49b50",4,1230,1290,115,50,"Looping Rock and Blues",0,""],["b1673abc",4,1230,1290,114,49,"Funk-blues and soul",0,""],["25cd7003",4,1230,1350,54,38,"Acoustic",0,""],["5fff0dd0",4,1260,1320,121,20,"Finest jugband music",0,""],["a8347c24",4,1260,1500,118,44,"R&B/Dance DJ",0,""],["1e47b8f4",4,1260,1320,120,33,"Saxophone",0,""],["c08fd0e4",4,1260,1320,119,3,"Funky, surfy, psychy, proggy and sassy",0,""],["22c3d3a8",4,1260,1380,116,24,"A local singer",0,""],["ac6d3468",4,1260,1380,117,39,"Indie Pop and Rock",0,""],["9280df4e",4,1275,1410,122,6,"5 piece party band",0,""],["1e9560fa",4,1275,1335,123,12,"Funk/Indie Rock",0,""],["91fd63fd",4,1290,1410,75,8,"Energetic, nostalgic",0,""],["d3cfbcfe",4,1290,1365,124,15,"An 8 piece Ska machine!",0,""],["09626012",4,1290,1560,127,29,"Live DJ playing all your requests",0,""],["55fea546",4,1290,1380,128,2,"Ska",0,""],["96fa5f2b",4,1290,1410,130,1,"Reggae & Ska Classics",0,""],["222fe7fc",4,1290,1350,129,48,"High Propulsion Space Rock",0,"https://www.ticketsource.com/lancastermusicfestival/t-xdyjljg"],["3ba516fc",4,1290,1410,125,41,"Pop/Rock covers",0,""],["f05a8984",4,1290,1410,126,5,"Rock cover legends",0,""],["849b30cd",4,1320,1410,131,16,"High-energy Rock and Metal powerhouse",0,""],["90f39843",4,1320,1410,81,28,"Classic Rock",0,""],["552ef01a",4,1320,1380,49,49,"Neo-psychedelic alternative rock",0,""],["811c8026",4,1320,1440,132,14,"Homage to the music of David Bowie",0,""],["1e930561",4,1350,1440,77,3,"Energetic indie rock",0,""],["91f41c27",4,1350,1560,134,17,"Post-punk experimental noise duo",0,""],["b11d7f47",4,1350,1440,133,12,"Rock covers",0,""],["d3d05779",4,1380,1560,135,15,"Afro, Asian dance beats",0,""],["3bfcfbc6",5,600,1320,136,51,"DJs and Selectors",0,""],["87bfac60",5,600,960,137,52,"Creative music installation for under5s",1,""],["3f27dbfe",5,630,750,138,9,"Stirring Georgian choral songs",1,""],["512b045d",5,630,675,140,48,"Cello - sounds from Norway",0,""],["311f3fe9",5,630,960,139,53,"Make your Merch",1,""],["0da95044",5,645,690,141,54,"​Learn the basic rhythms of Indian music",1,"https://www.ticketsource.com/lancastermusicfestival/t-ldxzjya"],["585eb55b",5,660,680,143,55,"Songs from the school choir",0,""],["ae88b0cb",5,660,720,142,49,"CANCELLED- Make a wooden pipe organ",1,"https://www.ticketsource.com/lancastermusicfestival/t-zoyknea"],["586b7af0",5,685,705,144,55,"Join in with an interactive Zumba class",1,""],["895ede1d",5,690,720,149,22,"Acoustic Pop and Rock",0,""],["81b6f736",5,690,780,147,2,"Irish acoustic",0,""],["818c6751",5,690,780,146,27,"3 part harmony singing workshop",1,"https://www.ticketsource.com/lancastermusicfestival/t-ejqxgpk"],["101464bf",5,690,705,148,56,"Traditional English Folk Music",0,""],["3bd262ac",5,690,750,145,5,"Solo guitarist with a powerful voice",0,""],["756a9889",5,705,750,151,48,"Chinese/experimental",0,""],["5867f454",5,705,750,150,57,"Quirky covers and Brass classics",0,""],["c98534cf",5,705,750,141,54,"​Learn the basic rhythms of Indian music",1,"https://www.ticketsource.com/lancastermusicfestival/t-mjrqlgk"],["c115e22e",5,710,750,152,55,"Vibrant community steel band",0,""],["88822f0a",5,720,750,48,60,"Acoustic folk/world/storytelling",0,""],["6d31807d",5,720,750,159,25,"Guitar, Spanish Lute",0,""],["1cdcaeb2",5,720,750,44,61,"Travelling Singer Songwriter",0,""],["62ee0d9d",5,720,810,37,28,"Pop",0,""],["1ea55c0d",5,720,760,19,56,"Indie folk, singer songwriter",0,""],["a2149750",5,720,960,154,59,"Street performance at intervals",0,""],["0559b0df",5,720,750,155,59,"We Will Rock You operatic drama",0,""],["93e362b3",5,720,960,156,59,"We want more pockets!",0,""],["3fc7e7c0",5,720,780,153,58,"Professional live Accordionist",0,""],["2e0228df",5,720,840,75,47,"Energetic, nostalgic, well known",0,""],["f4a4b37c",5,720,780,112,43,"Join in for Trad Celtic tunes",1,""],["4ef7ca31",5,720,840,157,4,"Acoustic Music from across the years",0,""],["9080631d",5,720,900,158,21,"Various music",0,""],["097a2660",5,750,810,165,1,"Mexican psych",0,""],["a219f813",5,750,760,162,59,"60 Strong Singing Newspaper",0,""],["818348f3",5,750,810,164,62,"Old-time Appalachian Folk",0,""],["a8e843a9",5,750,795,160,42,"Alt-Folk",0,""],["9857468e",5,750,810,163,14,"Ramones Tribute",0,""],["34ecf73a",5,750,810,161,23,"Old tunes, electronica, and spoken word",0,""],["5860e801",5,755,775,166,55,"Showcasing Laura's Dance School Pupils",0,""],["64fe99a2",5,770,795,162,56,"60 Strong Singing Newspaper",0,""],["272318f2",5,780,800,176,55,"Song/dance from the Studio's pupils",0,""],["f08f7321",5,780,900,174,29,"Classic Rock band",0,""],["3b131fad",5,780,900,169,9,"Inclusive singing with Loz Kaye",1,"Link coming soon"],["3bd7be04",5,780,960,168,3,"Young bands from LMF Academy",0,""],["be2dda3a",5,780,900,167,24,"Soul, R&B, Pop, Reggae, Rap",0,""],["df07647f",5,780,825,104,63,"Juke Box Shop. Choose a Tune!",0,""],["ae6b395d",5,780,825,175,48,"Central African acoustic music & stories",0,""],["93e5776d",5,780,960,173,59,"Sequinned serenader. One Man Band",0,""],["a21c475e",5,780,810,171,59,"Kizomba and Semba dancing",1,""],["3bb4aa62",5,780,840,170,41,"Folk, Indie and more",0,""],["3bd2a34a",5,780,840,172,5,"Indie rock powerhouse",0,""],["fc8e1223",5,780,1020,36,18,"Find Your Unique Voice sound sessions",1,"https://www.ticketsource.com/lancastermusicfestival/e-pmbjeo"],["51e787b3",5,780,840,142,49,"CANCELLED- Make a wooden pipe organ",1,"https://www.ticketsource.com/lancastermusicfestival/t-njdynle"],["34fe6614",5,780,900,149,45,"3 piece rock and pop",0,""],["581443e7",5,795,825,48,64,"Acoustic folk/world/storytelling",0,""],["2185b7c1",5,795,815,177,56,"Dr David Scott Weavers Uprising Talk",0,""],["755f5880",5,795,840,150,65,"Brass band",0,""],["91ea6013",5,805,825,178,55,"Aerial Dance display",0,""],["8fd183c0",5,810,840,159,31,"Guitar, Spanish Lute",0,""],["1cda874a",5,810,840,59,61,"Soulful Songbird",0,""],["11aa1d5b",5,810,840,145,60,"Solo guitarist with a powerful voice",0,""],["1728d693",5,810,870,179,15,"Folk/Rock",0,""],["81b7202d",5,810,900,131,2,"Pop",0,""],["fc1a9de1",5,810,840,181,66,"Skilled taxidermy mice and 2 humans.",0,""],["c98accce",5,810,870,180,54,"Play Chinese instruments",1,"https://www.ticketsource.com/lancastermusicfestival/t-dkgpdyn"],["5230c6cd",5,810,870,182,43,"Folk/Pop/RnB",0,""],["36da9bcd",5,810,870,119,12,"Funky, surfy, psychy, proggy and sassy",0,""],["59f0bd3d",5,815,860,39,56,"Traditional Scottish and Irish folk",0,""],["ae676502",5,825,855,185,67,"Contemporary classical - sounds from Oz",0,""],["a21e3021",5,825,855,184,59,"Street band playing good time tunes",0,""],["b16930e3",5,825,870,183,42,"Alternative Pop, Indie Pop",0,""],["c02b011a",5,830,870,152,55,"Vibrant community steel band",0,""],["3745691c",5,840,885,187,20,"Original harmony folk with a twang",0,""],["1e845080",5,840,900,188,16,"Eat sleep rock repeat",0,""],["6d0fa7dd",5,840,870,192,69,"Bassoon and clog dancing",0,""],["889daddf",5,840,870,193,61,"Feelgood guitar vibes",0,""],["6d1b33ee",5,840,870,44,64,"Travelling Singer Songwriter",0,""],["25eebdb6",5,840,960,24,68,"Acoustic",0,""],["62f172f9",5,840,930,186,28,"Original Duo",0,""],["dcb73f24",5,840,885,81,63,"Juke Box Shop. Choose a Tune!",0,""],["25de7695",5,840,885,191,1,"Festival Vibes and funkiness",0,""],["a2f3e58a",5,840,930,19,58,"Indie folk, singer songwriter",0,""],["80b59d21",5,840,900,190,62,"Singer-songwriter",0,""],["755410ed",5,840,900,194,70,"CANCELLED Mozart Violin Concerto No.5",0,""],["70be48e4",5,840,960,12,35,"Pop singer/songwriter",0,""],["0963b75b",5,840,960,196,37,"Music",0,""],["edcce87f",5,840,900,189,14,"Hard Rock Trio",0,""],["a7a4331e",5,840,960,98,4,"Swing maestro and scat-supercat",0,""],["e02dcc2d",5,840,960,13,38,"Soulful, funky, danceable Blues",0,""],["755fadc7",5,840,900,195,36,"Jazz standards",0,""],["b885fc79",5,855,990,197,6,"Ultimate party band",0,""],["40ac84dd",5,860,875,148,71,"Traditional English Folk Music",0,""],["31e72d90",5,870,990,200,8,"Range of genres including Blues & Soul",0,""],["6d2d7c89",5,870,900,59,26,"Soulful Songbird",0,""],["382be91f",5,870,900,201,22,"Hurdy Gurdy and Galician Pipes",0,""],["54e05643",5,870,930,202,48,"Country folk from Canada & Scotland",0,""],["dceb25c4",5,870,900,171,59,"Kizomba and Semba dancing",1,""],["edc1584f",5,870,915,199,5,"Indie Rock",0,""],["fbf740a8",5,870,930,198,23,"Instrumental acoustic wizardry",0,""],["719b4305",5,875,895,144,55,"Join in with an interactive Zumba class",1,""],["34662c64",5,875,910,48,56,"Acoustic folk/world/storytelling",0,""],["4721c058",5,885,915,145,32,"Solo guitarist with a powerful voice",0,""],["6d125e9f",5,900,930,209,64,"Mandolin and Guitar",0,""],["05136199",5,900,960,99,33,"Acoustic",0,""],["aea91e64",5,900,920,166,55,"Showcasing Laura's Dance School Pupils",0,""],["055da46c",5,900,930,207,59,"Baybeat meet Cacophony",0,""],["37939c66",5,900,1020,203,39,"Feel good vocalist",0,""],["d77a042c",5,900,1020,205,47,"Rock pop",0,""],["edb2f931",5,900,1020,208,34,"Alternative Folk Rock",0,""],["5ffb572c",5,900,960,180,54,"Play Chinese instruments",1,"https://www.ticketsource.com/lancastermusicfestival/t-oevqxll"],["3603548f",5,900,945,206,42,"Celtic harp dance music fusion looping",0,""],["21542ce9",5,900,960,210,43,"Open mic on the Craic Inn stage",1,""],["d341d421",5,900,1020,204,7,"10 Piece Sea Shanty Band",0,""],["40e8830d",5,900,1080,90,21,"Juke Box band",0,""],["218d304f",5,910,930,211,56,"Kate Hurst Weavers Uprising Talk",0,""],["839e4c5d",5,925,945,176,55,"Song/dance from the Studio's pupils",0,""],["299fe7c2",5,930,960,159,30,"Guitar, Spanish Lute",0,""],["88807e41",5,930,960,193,60,"Feelgood guitar vibes",0,""],["384137f1",5,930,960,59,31,"Soulful Songbird",0,""],["5ae73102",5,930,1020,215,2,"Indie",0,""],["55e537e4",5,930,975,214,1,"Beatboxer",0,""],["f4ce375f",5,930,960,181,66,"Skilled taxidermy mice and 2 humans.",0,""],["f3bf64b5",5,930,975,114,56,"Funk-blues and soul",0,""],["c9d62e26",5,930,975,212,59,"Constantly Developing Carnival",0,""],["05539d81",5,930,1020,7,41,"Music from the 1930s to the present day",0,""],["dcd92e18",5,930,990,67,62,"Flamenco & Latin Jazz Guitar",0,""],["c920cefa",5,930,990,213,14,"Alt-Math Rock Band",0,""],["3400421e",5,930,1050,81,45,"Virtuoso guitarist with vocals",0,""],["55ff3ac7",5,930,990,77,12,"Energetic indie rock",0,""],["09c8164b",5,945,965,178,55,"Aerial Dance display",0,""],["f05e8dc6",5,945,1050,216,5,"Indie rock, Britpop & Pop-punk covers",0,""],["6d636b94",5,960,1080,220,68,"Pop/Rock",0,""],["1729432f",5,960,1020,199,15,"Indie-rock",0,""],["a2881f60",5,960,1080,219,29,"8-piece funk and soul",0,""],["70400df9",5,960,1080,218,24,"Singer/Guitarist - Pop/rock covers",0,""],["72e83fb1",5,960,1050,217,28,"Acoustic Alt-Indie",0,""],["4adc7c3a",5,960,980,221,42,"Traditional Persian violin",0,""],["ac08ad61",5,960,1080,170,4,"Folk, Indie and more",0,""],["0513b23d",5,975,1035,223,33,"Singer/Songwriter",0,""],["b12a9fcd",5,975,995,222,71,"Murder a Classic Tune",1,""],["38535ee2",5,990,1020,60,69,"Fiddle Duo",0,""],["5e9142ed",5,990,1020,193,30,"Feelgood guitar vibes",0,""],["40a213ca",5,990,1020,44,72,"Acoustic folk",0,""],["2156ca68",5,990,1050,96,43,"Irish traditional",0,""],["4e16627a",5,990,1050,224,23,"Post Everything Duo",0,""],["3479bb91",5,995,1035,225,56,"CANCELLED Upbeat Indie Originals",0,""],["36048705",5,1005,1065,151,42,"Chinese/Experimental",0,""],["71dabbfd",5,1020,1140,167,44,"Soul, R&B, Pop, Reggae, Rap",0,""],["9845d775",5,1020,1080,226,16,"Alternative Rock/Garage/Punk",0,""],["c79d607a",5,1020,1140,12,8,"Pop",0,""],["911761dc",5,1020,1200,230,73,"A chance for 11-18s to take the stage",1,""],["c9046dcb",5,1020,1440,228,9,"A night of local musicians and bands",0,""],["097f2e92",5,1020,1065,229,1,"Northern Soul classics",0,""],["a2f76468",5,1020,1140,227,58,"Folk and acoustic singer-songwriter",0,""],["09642e22",5,1020,1140,223,37,"Singer/Songwriter",0,""],["29a1dd37",5,1050,1080,149,30,"Acoustic Pop and Rock",0,""],["1e48348a",5,1050,1110,82,33,"Guitarist with an upbeat soulful vibe",0,""],["211ec576",5,1050,1095,234,9,"Singer-songwriter",0,""],["063bf6c7",5,1050,1140,233,2,"Ska punk",0,""],["218fce4b",5,1050,1095,232,56,"Eccentric Sci-Fi Prog Surf Cabaret",0,""],["9cf91dad",5,1050,1170,231,39,"Soul & Motown Show",0,""],["9ee87150",5,1050,1110,235,12,"Harmonic Stomp Rock",0,""],["55e43a5e",5,1065,1095,236,72,"One Man Blues Band",0,""],["46bb1735",5,1080,1125,243,10,"Folk",0,""],["054bcdae",5,1080,1140,175,3,"Central African dance music",0,""],["62f73bd3",5,1080,1170,96,28,"Trad Irish Folk",0,""],["f02ea71c",5,1080,1200,239,34,"3 Piece Rockabilly & Rock'n'Roll Band",0,""],["8078951c",5,1080,1170,238,5,"Indie, Alt Rock band",0,""],["e5426ed0",5,1080,1140,19,43,"Ruby plays highland pipes",0,""],["3ff46620",5,1080,1200,242,35,"Contemporary Rock",0,""],["1a006c61",5,1080,1200,91,6,"Mod/Funk",0,""],["c92b6b8e",5,1080,1170,240,14,"High Energy Modern Rock",0,""],["0d898ead",5,1080,1140,241,7,"Punk, Reggae, Ska influences",0,""],["5bf35bf1",5,1080,1200,40,4,"Duo performing covers and originals",0,""],["c09cc478",5,1080,1200,237,45,"Folk, Blues and Beyond",0,""],["9dea42d3",5,1095,1155,244,16,"Melodic indie/alternative rock",0,""],["a103e824",5,1095,1110,222,71,"Murder a Classic Tune",1,""],["36058035",5,1095,1140,102,42,"Funk pop/Altpop",0,""],["47dad5fc",5,1100,1140,245,9,"Alternative Folk",0,""],["4710e244",5,1110,1140,149,40,"Acoustic Pop and Rock",0,""],["1729d401",5,1110,1170,246,15,"Lancaster based Indie/Rock band",0,""],["25df7dd2",5,1110,1155,119,1,"Funky, surfy, psychy, proggy and sassy",0,""],["36dd4d2a",5,1110,1170,247,23,"Local Classic Rock/Country/Pop/Blues",0,""],["a1e89af8",5,1120,1170,49,56,"Neo-psychedelic alternative rock",0,""],["05145e35",5,1125,1185,160,33,"Alt-Folk",0,""],["c0cbe86f",5,1140,1185,252,74,"Swing, be-bop and Latin jazz classics",0,""],["32fb9639",5,1140,1185,249,20,"Spanish and Latin American songs",0,""],["24e5bce7",5,1140,1260,248,44,"CANCELLED - Dance and House",0,""],["0bd73db6",5,1140,1260,253,44,"female solo artist",0,""],["c79dcd50",5,1140,1260,251,8,"Band",0,""],["3853f7da",5,1140,1170,51,11,"Trad Flute and Guitar",0,""],["34ec7d2b",5,1140,1260,101,24,"Covers Oasis, Kasabian and their own",0,""],["05561bf9",5,1140,1230,54,41,"Acoustic",0,""],["7d01a6ad",5,1140,1260,250,47,"Blues/Rock",0,""],["f4eb149f",5,1140,1260,7,21,"Immersive band",0,""],["e7ed827e",5,1140,1260,58,38,"Acoustic Duo - Pop/Rock/Indie Covers",0,""],["df6c07ad",5,1150,1190,254,9,"Poetry and spoken word",0,""],["247041c7",5,1155,1200,183,3,"Alternative pop, indie Pop",0,""],["0d69fc4a",5,1170,1290,255,29,"Highly entertaining Rock Band",0,""],["21eaade1",5,1170,1215,256,2,"Acoustic",0,""],["fb8772ae",5,1170,1290,257,46,"Classical memorial concert",0,"https://www.trybooking.com/uk/events/landing/115300"],["94f46f33",5,1170,1230,147,43,"Irish acoustic",0,""],["b123a787",5,1170,1230,104,12,"Originals and covers Indie Rock music",0,""],["a1eaf6e9",5,1185,1230,258,56,"Funk, Punk, Psych-Rock",0,""],["091eb6a2",5,1200,1245,264,74,"Rap, stories and poetry for the soul",0,""],["ede1e044",5,1200,1260,31,16,"Hardcore, Hard Rock, Pop Punk",0,""],["0514b212",5,1200,1260,260,33,"Acoustic",0,""],["9dadd03c",5,1200,1320,66,68,"Rock/Ballards",0,""],["ce83a37e",5,1200,1240,265,9,"Alternative / indie",0,""],["bbe7a29f",5,1200,1290,259,28,"Instrumental Duo",0,""],["315853f2",5,1200,1320,263,72,"Acme Bass crew",0,""],["216db02e",5,1200,1245,262,1,"Rock/pop",0,""],["807912e8",5,1200,1290,124,5,"An 8 piece Ska machine",0,""],["0ad2f366",5,1200,1245,172,49,"Indie Rock",0,""],["043d5a77",5,1200,1320,75,37,"Energetic, nostalgic,",0,""],["8147da67",5,1200,1290,261,14,"80s-inspired stadium rock band",0,""],["92670601",5,1200,1320,149,4,"Acoustic Pop and Rock",0,""],["5ae7e6d5",5,1215,1260,266,2,"Indie/Alt/Pop/Punk",0,""],["533dca32",5,1230,1275,268,3,"Pop choruses and off-kilter rhythms",0,""],["a2fd19db",5,1230,1320,145,58,"Solo guitarist with a powerful voice",0,""],["d0056fb2",5,1230,1350,267,45,"Pop covers with a vintage twist",0,""],["a15d797b",5,1230,1290,199,23,"Indie-Rock",0,""],["47edd3ef",5,1250,1300,269,9,"CANCELLED Electronic",0,""],["e587343d",5,1260,1305,277,74,"Bold fusion of jazz, punk and blues",0,""],["84b302b3",5,1260,1320,271,20,"Electro pop",0,""],["0bdb2e45",5,1260,1500,279,44,"Ibiza classics DJ",0,""],["a42e2cc3",5,1260,1500,270,44,"CANCELLED - Vocal House DJ",0,""],["c7a1e525",5,1260,1380,275,8,"Five piece band",0,""],["18c6125f",5,1260,1320,276,48,"An Evening of Story, Poetry and Song",0,"https://www.ticketsource.com/lancastermusicfestival/t-jxjrjde"],["49127e42",5,1260,1380,272,39,"5 piece covers band",0,""],["1e4a99e9",5,1260,1380,273,34,"5 piece Fleetwood Mac cover band",0,""],["52373b55",5,1260,1320,278,43,"High-energy Irish rock & roll",0,""],["70bc3048",5,1260,1380,274,35,"Alternative folk",0,""],["98f196fd",5,1260,1380,40,7,"Duo performing covers & originals.",0,""],["0a15cea1",5,1275,1335,280,16,"Modern indie rock/pop",0,""],["9c87ff98",5,1275,1350,77,15,"Energetic indie rock",0,""],["2141ec99",5,1275,1380,119,49,"Funky, surfy, psychy, proggy and sassy",0,""],["81beb968",5,1290,1410,283,33,"House mix",0,""],["c094c3ec",5,1290,1335,114,3,"Funk-blues and soul",0,""],["90159594",5,1290,1410,282,24,"Classic Rock, Punk, Metal",0,""],["81b84088",5,1290,1380,78,2,"Rock, Acoustic, Covers",0,""],["816a42c5",5,1290,1335,206,1,"Celtic harp dance music fusion looping.",0,""],["eb7308f6",5,1290,1410,281,6,"Pop rock 80s cover band",0,""],["86f31afd",5,1290,1425,126,12,"Rock cover legends",0,""],["0e1805b6",5,1310,1380,134,9,"Post-punk experimental noise duo",0,""],["09651281",5,1320,1560,285,29,"Live DJ: Biggest Saturday Night Party",0,""],["971c0624",5,1320,1410,53,28,"Lively covers from a variety of eras",0,""],["05571975",5,1320,1380,102,41,"Colourful grooves, soul and indie-pop",0,""],["81c49556",5,1320,1440,131,5,"High-energy Rock & Metal powerhouse",0,""],["8dc18872",5,1320,1380,286,43,"DJ",0,""],["c93a5b22",5,1320,1380,284,14,"Rocked Up Covers of 90s Rave classics",0,""],["c0957684",5,1350,1440,258,3,"Funk, punk, psych-rock",0,""],["849bec58",5,1365,1410,287,16,"Alternative/Trip Hop/Rock",0,""],["9c883b32",5,1380,1560,288,15,"Balearic and Dance",0,""],["0603f1c9",5,1380,1425,49,1,"Alternative",0,""],["91098268",5,1380,1500,290,17,"DJ Grimesy",0,""],["98952f84",5,1380,1500,289,75,"High energy rock covers",0,""],["2170ab39",5,1455,1515,258,1,"Funk, Punk, Psych-Rock",0,""],["40f3b8d2",5,1500,1620,291,17,"Louisa SDTG DJ Set",0,""],["0dddbc11",6,615,705,292,3,"Build up rhythm & sound using your body",1,"https://www.trybooking.com/uk/GVNO"],["fbdcd38b",6,660,960,293,55,"Samba Drummer and local school bands",0,""],["5ae826e2",6,690,780,179,2,"Folk/Rock",0,""],["0607f65a",6,720,840,297,8,"Live acoustic",0,""],["2a244f30",6,720,810,70,28,"Folk rock, Indie and Ska tinge",0,""],["b1078f5d",6,720,760,160,56,"Alt-Folk",0,""],["a215c9c1",6,720,960,154,59,"Street performance at intervals",0,""],["9865153e",6,720,960,296,59,"Juggling, spinning and hooping!",1,""],["318508eb",6,720,750,295,5,"Acoustic",0,""],["09660749",6,720,840,298,37,"Singer Songwriter",0,""],["a8c2bc8a",6,720,780,294,23,"Acoustic",0,""],["514210ee",6,735,810,185,9,"Contemporary classical",0,""],["98243483",6,750,780,300,48,"Youth Jazz Orchestra",0,""],["3bb59950",6,750,795,220,50,"Pop",0,""],["a7fa956a",6,750,810,237,62,"Folk & Blues",0,""],["94011738",6,750,810,301,43,"Singer/Songwriter",0,""],["32a61cf5",6,750,900,299,6,"Traditional Jazz",0,""],["58be82cb",6,765,825,302,76,"Live performance of CBeebies show",1,"https://www.ticketsource.com/lancastermusicfestival"],["581be86b",6,780,810,145,25,"Solo guitarist with a powerful voice",0,""],["1ba49b67",6,780,900,56,29,"To Be Confirmed",0,""],["7868964f",6,780,1260,309,77,"'Betwix the Bogs' - Tiny Studio Sessions",0,""],["36dd8e23",6,780,820,235,56,"Harmonic Stomp Rock",0,""],["3f1f68e8",6,780,960,173,59,"Sequinned serenader. One Man Band",0,""],["10793a4e",6,780,840,304,59,"Be part of Lancaster's Kazoo Orchestra",1,""],["1e1d5559",6,780,840,306,5,"Funky, folky 4-piece playing originals",0,""],["3f5d2fdb",6,780,840,307,54,"Learn to play Cuban rumba rhythms",1,"https://www.ticketsource.com/lancastermusicfestival/t-mjrqgjl"],["58ba41bb",6,780,960,308,53,"Creative activities - music, craft, play",1,""],["a8e92868",6,780,825,19,42,"Indie Folk, singer songwriter",0,""],["c0a19de5",6,780,900,305,45,"Upbeat acoustic guitarist",0,""],["86f42949",6,780,840,303,12,"A 5 piece contemporary jazz combo",0,""],["98153aed",6,795,855,74,50,"Duo",0,""],["8fca050b",6,810,840,16,26,"Brilliant Young Harpist",0,""],["dc44da4d",6,810,930,310,3,"Music industry advice and discussion",1,"https://moremusic.org.uk/whats-on/music-industry-pathways-for-young-people/"],["81b89a0e",6,810,900,311,2,"Buzzing fresh tunes",0,""],["d0da3341",6,810,855,75,63,"Shop window Juke Box. Choose your tune!",0,""],["09807e22",6,810,855,28,1,"Funk open stage",0,""],["33e5d267",6,810,885,312,19,"Sound session with voice, bowls & drums",1,"https://www.ticketsource.com/lancastermusicfestival/t-vxjozzl"],["a10556a8",6,820,840,222,71,"Murder a Classic Tune",1,""],["dc5068ff",6,825,870,313,62,"All female acapella trio",0,""],["e51dc24c",6,840,885,70,20,"Folk indie",0,""],["30f1c6c5",6,840,960,182,8,"Folk/Pop/RnB",0,""],["98893e99",6,840,1020,77,51,"Energetic Indie Rock",0,""],["25efc5cc",6,840,960,314,68,"Acoustic",0,""],["e08b61bb",6,840,960,321,9,"Southern African fingerstyle guitarist",0,""],["72fdadbd",6,840,930,237,28,"Folk, Blues and Beyond",0,""],["e7e99385",6,840,880,316,56,"Flamenco Boogie",0,""],["e71accbf",6,840,870,317,59,"Kate Bush flashmob. Bring red clothes",1,""],["de28f2da",6,840,960,318,47,"Rock/indie pop",0,""],["90376b52",6,840,900,319,43,"Bring a tune and instrument",1,""],["3f0dd62c",6,840,960,105,35,"High Energy Rock & Classic Hit Covers",0,""],["9192bec4",6,840,960,320,21,"Immersive band",0,""],["1e365e96",6,840,900,315,23,"Acoustic Rock",0,""],["09ba38ae",6,855,915,302,76,"Live performance of CBeebies show",1,"https://www.ticketsource.com/lancastermusicfestival"],["dcef1756",6,855,900,323,50,"Pop",0,""],["b16b3a1c",6,855,975,322,42,"Nashville-style female songwriters round",0,""],["f7899c60",6,870,900,16,32,"Brilliant Young Harpist",0,""],["ac599675",6,870,945,324,15,"Folk to Floyd, Blues, Rock and Roll",0,""],["f060afc0",6,870,930,34,5,"Four piece Indie Pop band",0,""],["31280632",6,870,930,307,54,"Learn to play Cuban rumba rhythms",1,"https://www.ticketsource.com/lancastermusicfestival/t-njdyljp"],["a107a31c",6,880,900,222,71,"Murder a Classic Tune",1,""],["dca269bd",6,885,930,325,59,"Folk",0,""],["59cfb459",6,900,960,333,20,"Folk",0,""],["6d09fdc5",6,900,930,81,69,"One man looping guitar and vocals",0,""],["91746821",6,900,960,334,9,"CANCELLED Fingerstyle guitar",0,""],["70439313",6,900,1020,327,24,"60s, 70s & 80s singer/guitarist",0,""],["362b9b47",6,900,960,125,63,"Juke Box Shop. Choose a Tune!",0,""],["0980b923",6,900,945,332,1,"Electric duo",0,""],["e7eb8803",6,900,940,329,56,"Electro rock",0,""],["ac775e23",6,900,1020,253,39,"Female solo artist",0,""],["80b8f259",6,900,960,330,62,"Jazz & Swing",0,""],["1e4cf8ca",6,900,1020,39,34,"Traditional Scottish and Irish folk",0,""],["dce98003",6,900,960,331,18,"A guided city centre sound trail",1,"https://www.ticketsource.com/lancastermusicfestival/t-glydnmg"],["09666b56",6,900,1020,149,37,"Acoustic Pop and Rock",0,""],["11231f04",6,900,960,326,4,"Folk/Blues",0,""],["86f5febd",6,900,1020,328,12,"Rock/Blues",0,""],["5ae868ff",6,930,1020,104,2,"Originals and covers indie rock music",0,""],["9815837d",6,930,1020,335,50,"Singer Songwriter",0,""],["23f4e875",6,930,990,160,43,"Alt-Folk",0,""],["7173f8be",6,930,1050,54,45,"Acoustic covers 1920s to present",0,""],["09ba4666",6,945,1005,302,76,"Live performance of CBeebies show",1,"https://www.ticketsource.com/lancastermusicfestival"],["887919dc",6,960,990,81,11,"One man looping guitar and vocals",0,""],["3b6cf9af",6,960,1080,339,29,"80s funk band",0,""],["6cabc00b",6,960,1050,340,3,"A showcase of local community choirs",0,""],["2a3a0917",6,960,1050,115,28,"Looping Rock and Blues",0,""],["55e885df",6,960,1000,114,1,"Funk-blues and soul",0,""],["c04f9192",6,960,1000,119,56,"Funky, surfy, psychy, proggy and sassy",0,""],["b1442745",6,960,1020,337,59,"Come and join the ceilidh dance",1,""],["1e2062f3",6,960,1050,338,5,"Alt-folk rock",0,""],["5ceaeb06",6,960,1140,90,6,"Pop & Rock n Roll Juke-box band",0,""],["979f320d",6,960,1080,336,4,"Performing original songs & covers",0,""],["81105836",6,975,1035,341,62,"Old-time with Damon Kilcawley",0,""],["8173a5e0",6,990,1110,342,8,"Rock",0,""],["585500c3",6,990,1050,19,9,"Indie folk, singer songwriter",0,""],["34fdc32a",6,990,1020,44,48,"Travelling Singer Songwriter",0,"https://www.ticketsource.com/lancastermusicfestival/t-glyjypr"],["1e5f764f",6,1005,1080,329,42,"Electro rock",0,""],["0ae8dcc7",6,1020,1140,344,44,"Powerful female vocalist",0,""],["ac5a9c28",6,1020,1095,343,15,"Original Experimental Alt/Pop Collective",0,""],["cd3c980f",6,1020,1080,346,13,"LMF edition of the Gregson Quiz!",1,""],["55e83f5d",6,1020,1060,345,1,"Full-blooded blues and boogie",0,""],["712c2662",6,1020,1045,48,48,"Acoustic folk/world/storytelling",0,"https://www.ticketsource.com/lancastermusicfestival/t-glyjypr"],["218342b4",6,1020,1080,56,43,"To Be Confirmed",0,""],["1c4d0e4f",6,1020,1080,7,7,"Music from the 1930s to the present day",0,""],["10509edb",6,1020,1200,297,21,"Soloist female singer",0,""],["1e375632",6,1020,1080,24,23,"Classy acoustic covers",0,""],["5ae88488",6,1050,1140,133,2,"Rock covers",0,""],["b1392c01",6,1050,1095,347,48,"Dreamy, cinematic songs for the weary",0,"https://www.ticketsource.com/lancastermusicfestival/t-glyjypr"],["8b045ba9",6,1050,1140,349,78,"Sound session with voice, bowls, gong",1,"https://www.ticketsource.com/lancastermusicfestival/t-dkgqlpd"],["5ffa2bd0",6,1050,1095,348,62,"Americana, Roots & Country",0,""],["fd3c2daf",6,1065,1110,350,1,"Blues & Folk",0,""],["8db6aa95",6,1080,1125,354,20,"Like Mirrorkill only stranger.",0,""],["5857acb0",6,1080,1125,316,9,"Flamenco-style boogie",0,""],["0b51eb21",6,1080,1200,272,24,"5 piece covers band",0,""],["9db91d46",6,1080,1170,351,28,"Acoustic Duo",0,""],["9c015154",6,1080,1200,101,39,"Covers Oasis, Kasabian and their own",0,""],["d0eb549d",6,1080,1200,353,47,"Blues/Rock band",0,""],["3f09b6f7",6,1080,1140,81,34,"Eccentric Songwriting, Virtuosic Guitar",0,""],["f062dbfc",6,1080,1140,86,5,"Indie folk rock",0,""],["848e551c",6,1080,1200,237,4,"Folk, Blues and Beyond",0,""],["0d7b19a7",6,1080,1200,75,45,"Energetic, nostalgic covers & originals",0,""],["a8a1e2e2",6,1080,1200,352,12,"Balkan and Klezmer. Lancaster Style",0,""],["1e528b10",6,1095,1155,49,3,"Neo-psychedelic alternative rock",0,""],["a268f5b4",6,1110,1170,355,62,"Trailblazing country & western swing",0,""],["525c61d4",6,1110,1170,114,43,"Funk-blues and soul",0,""],["2997b976",6,1140,1170,159,40,"Guitar, Spanish Lute",0,""],["3ffe7ec7",6,1140,1260,115,68,"Looping Rock and Blues",0,""],["96fc8df3",6,1140,1185,356,1,"Jazz & Funk",0,""],["704218c0",6,1140,1200,54,7,"Acoustic",0,""],["fb852f15",6,1155,1260,357,9,"Flamenco guitar, song, dance and palmas",0,""],["5ae89e4d",6,1170,1260,205,2,"Rock pop",0,""],["1e21964e",6,1170,1260,246,5,"Lancaster based Indie/Rock band",0,""],["8055db05",6,1200,1260,56,15,"To Be Confirmed",0,""],["3bf089a3",6,1200,1320,358,3,"Ska and rock-steady",0,""],["993b4ff0",6,1200,1290,7,28,"Music from the 1930s to the present day",0,""],["23f5e85a",6,1200,1260,359,43,"Banging tunes with top lads",0,""],["043eef2c",6,1200,1320,250,37,"Blues",0,""],["90888eae",6,1200,1320,73,21,"Immersive fun loving band",0,""],["1e393957",6,1200,1260,81,23,"One man looping guitar and vocals",0,""],["96fcb3c6",6,1215,1260,55,1,"Chicago Blues Band",0,""],["e87a0703",6,1230,1320,345,6,"Full-blooded blues and boogie",0,""],["80560ba2",6,1260,1320,134,15,"Post-punk experimental noise duo",0,""],["ea854186",6,1260,1380,311,39,"Classic Pop & Rock Duo",0,""],["4e0eb48b",6,1260,1380,219,12,"8-piece funk and soul",0,""],["5ae8a83f",6,1290,1380,126,2,"Rock cover legends",0,""],["254c198d",6,1290,1350,360,1,"Rock/Blues",0,""],["3fdf2040",6,1290,1350,119,5,"Funky, surfy, psychy, proggy and sassy",0,""],["84ed2848",6,1320,1380,362,20,"Rants on rugs etc.",0,""],["81c30797",6,1320,1380,361,15,"Pedigree chumps play pineapple pop punk",0,""],["3fdf620b",6,1380,1470,49,5,"Neo-psychedelic alternative rock",0,""]],"c":{"ver":"Fri 9 Oct","changed":[{"id":"55826d53","k":"time","was":{"day":4,"s":1050,"e":1140,"act":"The Charm","area":"Kanteena","room":""}},{"id":"b1eb8644","k":"swap","was":"Good Boy Nikko"},{"id":"55e1a229","k":"time","was":{"day":4,"s":1140,"e":1185,"act":"Mountain Ash","area":"Kanteena","room":""}},{"id":"96fa5f2b","k":"new"},{"id":"90f39843","k":"swap","was":"Wellington Grosvenor"},{"id":"911761dc","k":"time","was":{"day":5,"s":900,"e":1200,"act":"Young Persons Karaoke","area":"Escape2Make","room":""}},{"id":"62f73bd3","k":"swap","was":"Rebel Girl & Yelah"},{"id":"47dad5fc","k":"time","was":{"day":5,"s":1100,"e":1260,"act":"Micky Plankton","area":"Gregson","room":"Olive Bar"}},{"id":"21eaade1","k":"swap","was":"Cock-batteth"},{"id":"fd3c2daf","k":"new"},{"id":"96fc8df3","k":"new"},{"id":"96fcb3c6","k":"new"},{"id":"254c198d","k":"time","was":{"day":6,"s":1170,"e":1215,"act":"Tantrum","area":"Kanteena","room":""}}],"gone":[{"id":"f4fca79e","day":4,"s":1230,"e":1320,"act":"The Reggie Mental Band","area":"Kanteena","room":""},{"id":"096d918e","day":4,"s":1320,"e":1380,"act":"Casino","area":"Kanteena","room":""}]}};
+const DAYS = [
+  {short:"Mon", name:"Monday", date:5},{short:"Tue", name:"Tuesday", date:6},{short:"Wed", name:"Wednesday", date:7},
+  {short:"Thu", name:"Thursday", date:8},{short:"Fri", name:"Friday", date:9},{short:"Sat", name:"Saturday", date:10},{short:"Sun", name:"Sunday", date:11}];
+const V = DATA.v, A = DATA.a;
+const GIGS = DATA.g.map(([id,day,s,e,ai,vi,desc,join,url]) => {
+  const [area, room] = V[vi];
+  const act = A[ai];
+  const cx = /^\s*cancell?ed\b/i.test(desc);
+  if (cx) desc = desc.replace(/^\s*cancell?ed\s*[-:–]?\s*/i, "");
+  return {id,day,s,e,act,ai,area,room,desc,cx,join:!!join,url,
+    hay:(act+" "+area+" "+room+" "+desc).toLowerCase()};
+});
+const BY_ID = Object.fromEntries(GIGS.map(g => [g.id, g]));
+const BY_ACT = {};
+GIGS.forEach(g => (BY_ACT[g.ai] = BY_ACT[g.ai] || []).push(g));
+const BY_AREA = {};
+GIGS.forEach(g => (BY_AREA[g.area] = BY_AREA[g.area] || []).push(g));
+const CHG = Object.fromEntries((DATA.c?.changed || []).map(c => [c.id, c]));
+const GONE = Object.fromEntries((DATA.c?.gone || []).map(c => [c.id, c]));
+
+// ---------- storage (per-viewer conveniences) ----------
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("lmf26."+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("lmf26."+k, JSON.stringify(v)); }catch(e){} if (k==="stars"||k==="friends"||k==="name") schedulePush(); }
+};
+const IN_CLAUDE = !!(window.claude && window.claude.use);
+const APP_URL = IN_CLAUDE ? "https://claude.ai/artifact/RQx84rJjsQRmtTUh8Ekd1m" : (location.origin + location.pathname);
+const INSTALLED = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+let persisted = false;
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(p => { persisted = p; updateSaveStatus(); }); } catch(e){}
+let cloud = null, cloudState = "pending"; // pending | ok | off | err
+let pushT = null, pushing = false, pushAgain = false;
+function schedulePush(){ if (!cloud) return; clearTimeout(pushT); pushT = setTimeout(pushCloud, 700); }
+async function pushCloud(){
+  if (!cloud) return;
+  if (pushing){ pushAgain = true; return; }
+  pushing = true;
+  try { await cloud.ref.set({stars:[...stars], friends, name:myName, updated:Date.now()}); cloudState = "ok"; }
+  catch(e){ if (e && (e.code==="invalid_argument" || e.code==="revoked" || e.code==="not_granted")){ cloud = null; cloudState = "off"; } else cloudState = "err"; }
+  pushing = false;
+  if (pushAgain){ pushAgain = false; pushCloud(); }
+  updateSaveStatus();
+}
+async function initCloud(){
+  try {
+    if (!window.claude || !window.claude.use){ cloudState="off"; return updateSaveStatus(); }
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user){ cloudState="off"; return updateSaveStatus(); }
+    const uid = await user.id();
+    if (!uid){ cloudState="off"; return updateSaveStatus(); }
+    const ref = db.doc("data/users/" + uid + "/plan");
+    const snap = await ref.get();
+    let changed = false;
+    if (snap.exists){
+      const d = snap.data() || {};
+      (Array.isArray(d.stars) ? d.stars : []).forEach(id => { if (BY_ID[id] && !stars.has(id)){ stars.add(id); changed = true; } });
+      (Array.isArray(d.friends) ? d.friends : []).forEach(f => {
+        if (f && typeof f.name==="string" && Array.isArray(f.ids) && !friends.some(x => x.name.toLowerCase()===f.name.toLowerCase())){
+          friends.push({name:String(f.name).slice(0,40), ids:f.ids.filter(id=>BY_ID[id])}); changed = true; }
+      });
+      if (!myName && typeof d.name==="string"){ myName = d.name.slice(0,40); changed = true; }
+    }
+    cloud = {ref};
+    if (changed){ try{ localStorage.setItem("lmf26.stars", JSON.stringify([...stars])); localStorage.setItem("lmf26.friends", JSON.stringify(friends)); localStorage.setItem("lmf26.name", JSON.stringify(myName)); }catch(e){} }
+    await pushCloud();
+    if (changed) rerenderKeepScroll(); else updateSaveStatus();
+  } catch(e){ cloudState = "off"; updateSaveStatus(); }
+}
+function planLink(){ return APP_URL + "#p~" + [...stars].filter(id=>BY_ID[id]).join("."); }
+function crewLink(){ const n = (myName||"Friend").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,30) || "Friend"; return APP_URL + "#c~" + n + "~" + [...stars].filter(id=>BY_ID[id]).join("."); }
+function saveStatusHTML(){
+  if (!IN_CLAUDE){
+    if (INSTALLED) return `<p class="save ok">Saved on this phone. Works offline too.</p>`;
+    return `<div class="save warn"><p><b>Saved in this browser.</b> For the most reliable saving and offline use, install the planner: ${IS_IOS ? "tap the Share button in Safari, then <b>Add to Home Screen</b>" : "use your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>"}. Do this before you start starring: the installed app keeps its own saved picks.</p>
+      <div class="row"><button class="btn alt" data-copyplan>Copy my plan link</button></div>
+      <p class="install">The plan link has your picks built in. Open it in the installed app's browser or any phone to bring them back.</p>
+      <input type="text" id="planLinkOut" readonly style="display:none;margin-top:8px" aria-label="Your plan link"></div>`;
+  }
+  if (cloudState==="ok") return `<p class="save ok">Saved to your Claude account, so your plan is there on any device.</p>`;
+  if (cloudState==="pending") return `<p class="save">Checking where your plan is saved…</p>`;
+  return `<div class="save warn"><p><b>Saved in this browser only.</b> Opening the festival link from a different app (WhatsApp, Messages, Safari) gives a separate, empty copy, and phones can clear it. Keep your plan link: opening it brings your picks back anywhere.</p>
+    <div class="row"><button class="btn rose" data-copyplan>Copy my plan link</button></div>
+    <input type="text" id="planLinkOut" readonly style="display:none;margin-top:8px" aria-label="Your plan link"></div>`;
+}
+function updateSaveStatus(){ const el = document.getElementById("saveStatus"); if (el) el.innerHTML = saveStatusHTML(); }
+const rawStars = store.get("stars", []);
+const goneStars = rawStars.filter(id => GONE[id]).map(id => GONE[id]);
+let stars = new Set(rawStars.filter(id => BY_ID[id]));
+let friends = store.get("friends", []);
+let myName = store.get("name", "");
+let showCrew = store.get("showCrew", true);
+let seenVer = store.get("seenVer", "");
+
+// ---------- time ----------
+function startOf(day){ return new Date(2026, 9, DAYS[day].date, 0, 0, 0).getTime(); }
+function absStart(g){ return startOf(g.day) + g.s*60000; }
+function absEnd(g){ return startOf(g.day) + g.e*60000; }
+function hhmm(m){ m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }
+function todayIdx(){
+  const n = new Date();
+  if (n.getFullYear()!==2026 || n.getMonth()!==9) return -1;
+  const d = new Date(n.getTime() - 4*3600000).getDate(); // before 4am counts as the night before
+  return DAYS.findIndex(x => x.date === d);
+}
+function dur(min){ const h=Math.floor(min/60), m=min%60; return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m} min`; }
+const isLive = g => { const n=Date.now(); return absStart(g) <= n && n < absEnd(g); };
+const isPast = g => absEnd(g) <= Date.now();
+
+// ---------- state ----------
+const t0 = todayIdx();
+const state = { view:"list", day: t0>=0 ? t0 : 3, q:"", filter:"all", now:false, hidePast: t0>=0,
+  venue:null, vday:null, vstage:"", vq:"" , sheet:null, vmode: store.get("vmode","grid") };
+
+// ---------- helpers ----------
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const initials = n => (n.trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2) || "?").toUpperCase();
+function friendsFor(id){ return friends.filter(f => f.ids.includes(id)); }
+function venueLabel(g){ return g.room ? `${esc(g.area)} <em>${esc(g.room)}</em>` : esc(g.area); }
+function passFilter(g){
+  if (state.filter==="gig" && g.join) return false;
+  if (state.filter==="join" && !g.join) return false;
+  if (state.filter==="book" && !g.url) return false;
+  return true;
+}
+function matches(g){ return !state.q || state.q.split(/\s+/).every(w => g.hay.includes(w)); }
+function clashWith(g){ if (g.cx) return []; return [...stars].map(x=>BY_ID[x]).filter(o => o && !o.cx && o!==g && o.day===g.day && o.s < g.e && g.s < o.e); }
+function changeNote(g){
+  const c = CHG[g.id]; if (!c) return "";
+  if (c.k==="new") return "Newly added";
+  if (c.k==="swap") return `Changed: was ${c.was}`;
+  const w = c.was; const bits=[];
+  if (w.s!==g.s || w.e!==g.e || w.day!==g.day) bits.push(`was ${w.day!==g.day?DAYS[w.day].short+" ":""}${hhmm(w.s)} to ${hhmm(w.e)}`);
+  if (w.area!==g.area || w.room!==g.room) bits.push(`was at ${w.area}`);
+  return "Changed: " + bits.join(", ");
+}
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z"/></svg>';
+
+function card(g, opts={}){
+  const live = isLive(g), past = isPast(g);
+  const on = stars.has(g.id);
+  const crew = friendsFor(g.id);
+  const others = BY_ACT[g.ai].length - 1;
+  const tags = [];
+  if (g.cx) tags.push('<span class="tag cxl">Cancelled</span>');
+  if (live && !g.cx) tags.push('<span class="tag live">On now</span>');
+  if (opts.showStage && g.room) tags.push(`<span class="stage">${esc(g.room)}</span>`);
+  if (g.join) tags.push('<span class="tag join">Join in</span>');
+  if (g.url) tags.push(`<a class="tag book" href="${esc(g.url)}" target="_blank" rel="noopener">Book</a>`);
+  if (opts.clash) tags.push(`<span class="tag clash">Clash</span>`);
+  if (opts.plan && CHG[g.id] && CHG[g.id].k!=="new") tags.push(`<span class="tag chg">${esc(changeNote(g))}</span>`);
+  if (others > 0 && !opts.noMore) tags.push(`<span class="more">+${others} more show${others>1?"s":""}</span>`);
+  if (crew.length) tags.push('<span class="crew" aria-label="Also going: '+esc(crew.map(f=>f.name).join(", "))+'">'+crew.map(f=>`<i title="${esc(f.name)}">${esc(initials(f.name))}</i>`).join("")+'</span>');
+  const dayTxt = opts.showDay ? `<span style="font-size:13px;color:var(--muted);display:block">${DAYS[g.day].short}</span>` : "";
+  const venueBtn = opts.hideVenue ? "" : `<button data-venue="${esc(g.area)}" data-vday="${g.day}" aria-label="Open venue ${esc(g.area)}">${venueLabel(g)}</button>`;
+  const venueLine = (venueBtn || tags.length) ? `<div class="v">${venueBtn}${tags.join("")}</div>` : "";
+  return `<article class="gig${g.cx?" cx":""}${on?" starred":""}${live?" on":""}${past&&!opts.keepPast?" past":""}${opts.ghost?" ghost":""}">
+    <div class="t">${dayTxt}<b>${hhmm(g.s)}</b><span>to ${hhmm(g.e)}</span></div>
+    <div class="b" data-open="${g.id}" role="button" tabindex="0" aria-label="Details for ${esc(g.act)}"><h3>${esc(g.act)}</h3>${g.desc?`<p class="d">${esc(g.desc)}</p>`:""}
+      ${venueLine}</div>
+    <button class="star" data-star="${g.id}" aria-pressed="${on}" aria-label="${on?"Remove from":"Add to"} my plan: ${esc(g.act)}">${STAR}</button>
+  </article>`;
+}
+
+// ---------- header ----------
+function renderDays(){
+  const el = document.getElementById("days");
+  if (state.view==="list" || state.view==="venues"){
+    const counts = DAYS.map((_,i) => GIGS.filter(g => g.day===i && passFilter(g)).length);
+    const pressed = i => state.view==="venues" ? state.day===i : (!state.q && !state.now && state.day===i);
+    el.innerHTML = DAYS.map((d,i) => `<button class="day${i<3?" pre":""}${i===t0?" today":""}" data-day="${i}" aria-pressed="${pressed(i)}" aria-label="${d.name} ${d.date}, ${counts[i]} events${i===t0?", today":""}"><b>${d.short} ${d.date}</b></button>`).join("");
+    el.style.display = "";
+  } else el.style.display = "none";
+}
+function renderChips(){
+  const el = document.getElementById("chips");
+  if (state.view!=="list"){ el.style.display="none"; return; }
+  const f = [["all","Everything"],["gig","Gigs"],["join","Workshops & talks"],["book","Ticketed"]];
+  let html = `<button class="chip now" data-now aria-pressed="${state.now}">On now &amp; next</button>`;
+  html += f.map(([k,l]) => `<button class="chip" data-filter="${k}" aria-pressed="${state.filter===k}">${l}</button>`).join("");
+  if (t0>=0) html += `<button class="chip" data-hidepast aria-pressed="${state.hidePast}">Hide finished</button>`;
+  el.innerHTML = html; el.style.display = "";
+}
+let hdrH = 0, hdrHidden = false;
+function setHeaderVar(){
+  hdrH = document.getElementById("hdr").offsetHeight;
+  document.documentElement.style.setProperty("--hdr", (hdrH-1)+"px");
+  applyStick();
+}
+function applyStick(){
+  document.body.classList.toggle("hide-hdr", hdrHidden);
+  document.documentElement.style.setProperty("--stick", hdrHidden ? "0px" : (hdrH-1)+"px");
+}
+let lastY = 0;
+window.addEventListener("scroll", () => {
+  const y = Math.max(0, window.scrollY);
+  if (state.sheet) { lastY = y; return; }
+  let want = hdrHidden;
+  if (y < hdrH) want = false;
+  else if (y > lastY + 8) want = true;
+  else if (y < lastY - 8) want = false;
+  if (Math.abs(y - lastY) > 8 || y < hdrH) lastY = y;
+  if (want !== hdrHidden){ hdrHidden = want; applyStick(); }
+}, {passive:true});
+document.addEventListener("focusin", e => { if (e.target.closest && e.target.closest("#hdr") && hdrHidden){ hdrHidden=false; applyStick(); } });
+
+// ---------- views ----------
+function updateBanner(){
+  const c = DATA.c; if (!c || seenVer===c.ver) return "";
+  const n = c.changed.filter(x=>x.k==="new").length, ch = c.changed.length - n, g = c.gone.length;
+  return `<div class="banner"><span>Updated ${esc(c.ver)}: ${n} added, ${ch} changed, ${g} cancelled</span><button data-changes>See what</button></div>`;
+}
+function renderList(){
+  const now = Date.now();
+  let out = updateBanner();
+  if (state.now){
+    const pool = GIGS.filter(g => passFilter(g) && matches(g) && absEnd(g) > now);
+    const live = pool.filter(g => absStart(g) <= now);
+    const soon = pool.filter(g => absStart(g) > now && absStart(g) - now <= 90*60000);
+    if (!live.length && !soon.length){
+      const next = pool.sort((a,b)=>absStart(a)-absStart(b)).slice(0,12);
+      if (!next.length) return out + `<div class="empty"><h3>That's a wrap</h3><p>Nothing else matches. See you in 2027.</p></div>`;
+      return out + `<div class="hour"><h2>Coming up</h2><span>Nothing on in the next 90 minutes</span></div>` + next.map(g => card(g,{showDay:true})).join("");
+    }
+    if (live.length) out += `<div class="hour"><h2>On now</h2><span>${live.length}</span></div>` + live.sort((a,b)=>a.e-b.e).map(g=>card(g)).join("");
+    if (soon.length) out += `<div class="hour"><h2>Next 90 min</h2><span>${soon.length}</span></div>` + soon.sort((a,b)=>absStart(a)-absStart(b)).map(g=>card(g)).join("");
+    return out;
+  }
+  let list = GIGS.filter(g => passFilter(g) && matches(g));
+  if (!state.q) list = list.filter(g => g.day===state.day);
+  if (state.hidePast && !state.q) list = list.filter(g => absEnd(g) > now);
+  if (!list.length){
+    return out + `<div class="empty"><h3>No matches</h3><p>${state.q ? "Try a shorter search, or a style like “folk” or “jazz”." : "Nothing left on this day with these filters. Try “Everything” or another day."}</p></div>`;
+  }
+  if (state.q){
+    out += `<div class="hour"><h2>${list.length} result${list.length===1?"":"s"}</h2><span>across all days</span></div>`;
+    let lastDay = -1;
+    for (const g of list){
+      if (g.day!==lastDay){ out += `<div class="hour dayhead"><h2>${DAYS[g.day].name} ${DAYS[g.day].date}</h2></div>`; lastDay=g.day; }
+      out += card(g);
+    }
+    return out;
+  }
+  let lastH = -1; const perHour = {};
+  list.forEach(g => { const h=Math.floor(g.s/60); perHour[h]=(perHour[h]||0)+1; });
+  for (const g of list){
+    const h = Math.floor(g.s/60);
+    if (h!==lastH){ out += `<div class="hour"><h2>${hhmm(h*60)}</h2><span>${perHour[h]} starting</span></div>`; lastH=h; }
+    out += card(g);
+  }
+  return out;
+}
+
+function renderVenues(){
+  const seg = `<div class="ttwrap"><div class="seg" role="group" aria-label="Venue view"><button data-vmode="grid" aria-pressed="${state.vmode==="grid"}">Timetable</button><button data-vmode="list" aria-pressed="${state.vmode==="list"}">List</button></div>${state.vmode==="grid" ? (state.day===t0 ? `<button class="chip" data-hidepast aria-pressed="${state.hidePast}">Hide finished stages</button>` : `<small>Tap a venue or a show</small>`) : ""}</div>`;
+  return seg + (state.vmode==="grid" ? renderGrid() : renderVenueList());
+}
+function renderVenueList(){
+  const day = state.day, now = Date.now();
+  const q = state.q;
+  const rows = Object.entries(BY_AREA).map(([area, gs]) => {
+    const today = gs.filter(g => g.day===day);
+    const rooms = new Set(gs.map(g=>g.room).filter(Boolean));
+    const live = today.filter(isLive);
+    const next = today.filter(g => absStart(g) > now).sort((a,b)=>a.s-b.s)[0];
+    return {area, total:gs.length, today, rooms, live, next,
+      s: today.length ? Math.min(...today.map(g=>g.s)) : 0, e: today.length ? Math.max(...today.map(g=>g.e)) : 0};
+  }).filter(r => r.today.length && (!q || r.area.toLowerCase().includes(q) || r.today.some(g=>g.hay.includes(q))))
+    .sort((a,b)=> b.today.length-a.today.length || a.area.localeCompare(b.area));
+  if (!rows.length) return `<div class="empty"><h3>No venues</h3><p>Nothing ${q?"matches “"+esc(q)+"” ":""}on ${DAYS[day].name}.</p></div>`;
+  return `<div class="hour"><h2>${DAYS[day].name}</h2><span>${rows.length} venues, busiest first</span></div><div class="vlist">` +
+    rows.map(r => {
+      let sub = `${hhmm(r.s)} to ${hhmm(r.e)}${r.rooms.size>1?`, ${r.rooms.size} stages`:""}`;
+      if (r.live.length) sub = `<span class="live"></span>Now: ${esc(r.live.map(g=>g.act).join(", "))}`;
+      else if (t0===day && r.next) sub += `. Next: ${hhmm(r.next.s)} ${esc(r.next.act)}`;
+      return `<button data-venue="${esc(r.area)}" data-vday="${day}"><span><b>${esc(r.area)}</b><small>${sub}</small></span><span class="n" aria-label="${r.today.length} events">${r.today.length}</span></button>`;
+    }).join("") + `</div>`;
+}
+
+const PXM = 3; // pixels per minute
+function renderGrid(){
+  const day = state.day, now = Date.now(), q = state.q;
+  const todays = GIGS.filter(g => g.day===day);
+  if (!todays.length) return `<div class="empty"><h3>Nothing on</h3><p>No events on ${DAYS[day].name}.</p></div>`;
+  const t0m = Math.floor(Math.min(...todays.map(g=>g.s))/60)*60;
+  const t1m = Math.ceil(Math.max(...todays.map(g=>g.e))/60)*60;
+  const W = (t1m - t0m) * PXM;
+  // group by venue, busiest first; one row per stage
+  const areas = {};
+  todays.forEach(g => { (areas[g.area] = areas[g.area] || []).push(g); });
+  let list = Object.entries(areas).sort((a,b)=> b[1].length-a[1].length || a[0].localeCompare(b[0]));
+  const hit = g => !q || g.hay.includes(q);
+  if (q) list = list.filter(([a,gs]) => a.toLowerCase().includes(q) || gs.some(hit));
+  if (!list.length) return `<div class="empty"><h3>No venues</h3><p>Nothing matches “${esc(q)}” on ${DAYS[day].name}.</p></div>`;
+  let head = `<div class="tt-head"><div class="tt-corner"></div><div class="tt-track" style="width:${W}px">`;
+  for (let m=t0m; m<t1m; m+=60) head += `<div class="tt-hr" style="left:${(m-t0m)*PXM}px">${hhmm(m)}</div>`;
+  head += `</div></div>`;
+  let lines = "";
+  for (let m=t0m; m<t1m; m+=60) lines += `<div class="tt-grid" style="left:${(m-t0m)*PXM}px"></div>`;
+  const nowM = (now - startOf(day))/60000;
+  const nowLine = (nowM > t0m && nowM < t1m) ? `<div class="tt-now" style="left:${(nowM-t0m)*PXM}px"></div>` : "";
+  let rows = "";
+  const SCATTER = /^(busk stops|juke box shops)$/i;
+  list.sort((a,b)=> (SCATTER.test(a[0])?1:0) - (SCATTER.test(b[0])?1:0));
+  for (const [area, gs] of list){
+    const areaQ = q && area.toLowerCase().includes(q);
+    const scatter = SCATTER.test(area);
+    const roomsAll = [...new Set(gs.map(g=>g.room))];
+    // one row per stage (busy stages first); busk spots share packed rows
+    let groups = scatter ? [["", gs]] : roomsAll.map(r => [r, gs.filter(g=>g.room===r)]).sort((x,y)=> y[1].length-x[1].length);
+    if (day===t0 && state.hidePast) groups = groups.filter(([r,x]) => x.some(g => absEnd(g) > now));
+    if (!groups.length) continue;
+    let firstRow = true;
+    for (const [room, sgAll] of groups){
+      const sg = sgAll.slice().sort((x,y)=>x.s-y.s);
+      const lanes = [];
+      sg.forEach(g => { let l = lanes.findIndex(end => end <= g.s); if (l<0){ l=lanes.length; lanes.push(0);} lanes[l]=g.e; g._lane=l; });
+      for (let l=0; l<lanes.length; l++){
+        const label = firstRow ? `<b>${esc(area)}</b>${room?`<span>${esc(room)}</span>`:(scatter?`<span>${gs.length} spots around town</span>`:"")}`
+                                : (l===0 && room ? `<span style="color:var(--ink)">${esc(room)}</span>` : "");
+        rows += `<div class="tt-row${firstRow?" first":" cont"}"><button class="tt-name${firstRow?"":" cont"}" data-venue="${esc(area)}" data-vday="${day}" aria-label="Open ${esc(area)}${room?", "+esc(room):""}">${label}</button><div class="tt-track" style="width:${W}px">${lines}${nowLine}`;
+        sg.filter(g=>g._lane===l).forEach(g => {
+          const cls = ["tt-b"]; if (g.join) cls.push("join"); if (stars.has(g.id)) cls.push("picked");
+          if (isLive(g)) cls.push("live"); if (g.cx) cls.push("cx"); if (q && !areaQ && !hit(g)) cls.push("dim");
+          const w = Math.max((g.e-g.s)*PXM - 3, 18);
+          const sub = `${hhmm(g.s)} ${scatter && g.room ? esc(g.room) : esc(g.desc||"")}`;
+          rows += `<button class="${cls.join(" ")}" data-open="${g.id}" style="left:${(g.s-t0m)*PXM+1}px;width:${w}px" aria-label="${esc(g.act)}, ${hhmm(g.s)} to ${hhmm(g.e)}${g.room?", "+esc(g.room):""}${stars.has(g.id)?", in your plan":""}"><b>${esc(g.act)}</b><span>${sub}</span></button>`;
+        });
+        rows += `</div></div>`;
+        firstRow = false;
+      }
+    }
+  }
+  return `<div class="tt" id="tt" data-t0="${t0m}" data-day="${day}"><div class="tt-in" style="width:${W+104}px">${head}${rows}</div></div>`;
+}
+let ttScrollKey = "";
+function positionGrid(){
+  const el = document.getElementById("tt"); if (!el) return;
+  const key = el.dataset.day;
+  if (key === ttScrollKey) return; // keep the viewer's place on re-render
+  ttScrollKey = key;
+  const day = +el.dataset.day, t0m = +el.dataset.t0;
+  const nowM = (Date.now() - startOf(day))/60000;
+  const firstStar = [...stars].map(x=>BY_ID[x]).filter(g=>g && g.day===day).sort((a,b)=>a.s-b.s)[0];
+  let target = (nowM > t0m && nowM < t0m + 1800) ? nowM - 30 : firstStar ? firstStar.s - 30 : (day>=4 ? 17*60 : t0m);
+  el.scrollLeft = Math.max(0, (target - t0m) * PXM);
+}
+
+function renderVenue(){
+  const area = state.venue, all = BY_AREA[area] || [];
+  const days = [...new Set(all.map(g=>g.day))].sort((a,b)=>a-b);
+  if (state.vday===null || !days.includes(state.vday)) state.vday = days.includes(state.day) ? state.day : days[0];
+  const rooms = [...new Set(all.map(g=>g.room).filter(Boolean))];
+  if (state.vstage && !rooms.includes(state.vstage)) state.vstage = "";
+  const list = all.filter(g => g.day===state.vday && (!state.vstage || g.room===state.vstage)).sort((a,b)=>a.s-b.s || a.room.localeCompare(b.room));
+  const span = days.length>1 ? `${DAYS[days[0]].short} to ${DAYS[days[days.length-1]].short}` : DAYS[days[0]].name;
+  let out = `<div class="vhead">
+    <button class="back" data-back aria-label="Back">‹ Back</button>
+    <h2>${esc(area)}</h2>
+    <p>${all.length} event${all.length>1?"s":""}, ${span}${rooms.length>1?`, ${rooms.length} stages`:""}</p>
+  </div><div class="vctl">
+    <div class="days" role="group" aria-label="Day at this venue">${days.map(d => {
+      const n = all.filter(g=>g.day===d).length;
+      return `<button class="day${d===t0?" today":""}" data-vdaypick="${d}" aria-pressed="${d===state.vday}" aria-label="${DAYS[d].name}, ${n} events"><b>${DAYS[d].short} ${DAYS[d].date}</b></button>`; }).join("")}</div>
+    ${rooms.length>1 ? `<div class="chips" role="group" aria-label="Stage"><button class="chip" data-vstage="" aria-pressed="${!state.vstage}">All stages</button>${rooms.map(r=>`<button class="chip" data-vstage="${esc(r)}" aria-pressed="${state.vstage===r}">${esc(r)}</button>`).join("")}</div>` : ""}
+  </div>`;
+  let prevEnd = null;
+  for (const g of list){
+    if (!state.vstage && rooms.length>1){ /* gaps make no sense across stages */ }
+    else if (prevEnd!==null && g.s - prevEnd >= 15) out += `<div class="gap">${dur(g.s-prevEnd)} break</div>`;
+    out += card(g, {hideVenue:true, showStage: rooms.length>1});
+    prevEnd = Math.max(prevEnd ?? 0, g.e);
+  }
+  return out;
+}
+
+function renderPlan(){
+  let out = `<div id="saveStatus">${saveStatusHTML()}</div>`;
+  if (goneStars.length){
+    out += `<div class="panel" style="border:1.5px solid var(--rose)"><h3>Cancelled since you starred them</h3>${goneStars.map(g=>`<p style="margin:4px 0;color:var(--ink)">${DAYS[g.day].short} ${hhmm(g.s)} <b>${esc(g.act)}</b>, ${esc(g.area)}</p>`).join("")}<div class="row" style="margin-top:8px"><button class="btn alt" data-cleargone>Dismiss</button></div></div>`;
+  }
+  const mine = [...stars].map(id => BY_ID[id]).filter(Boolean);
+  const crewIds = showCrew ? new Set(friends.flatMap(f => f.ids)) : new Set();
+  const ghosts = [...crewIds].filter(id => !stars.has(id) && BY_ID[id]).map(id => BY_ID[id]);
+  const all = [...mine.map(g=>({g,ghost:false})), ...ghosts.map(g=>({g,ghost:true}))].sort((a,b)=> absStart(a.g)-absStart(b.g));
+  if (!all.length){
+    out += `<div class="empty"><h3>Your plan is empty</h3><p>Tap the star on anything in Listings and it lands here, in time order, with clashes flagged.</p></div>`;
+  } else {
+    let lastDay=-1, prev=null;
+    for (const {g,ghost} of all){
+      if (g.day!==lastDay){ out += `<div class="hour dayhead"><h2>${DAYS[g.day].name} ${DAYS[g.day].date}</h2><span>${mine.filter(x=>x.day===g.day).length} starred</span></div>`; lastDay=g.day; prev=null; }
+      let clash=false;
+      if (!ghost && !g.cx){
+        clash = clashWith(g).length > 0;
+        if (prev){
+          const gap = g.s - prev.e;
+          out += gap < 0 ? `<div class="gap bad">Overlaps ${esc(prev.act)} by ${dur(Math.min(prev.e,g.e)-g.s)}</div>`
+                : gap === 0 ? `<div class="gap">Straight on, no break</div>`
+                : `<div class="gap">${dur(gap)} free</div>`;
+        }
+        if (!prev || g.e > prev.e) prev = g;
+      }
+      out += card(g,{clash, ghost, keepPast:true, plan:true});
+    }
+  }
+  out += `<div class="panel"><h3>Share with friends</h3>
+    <p>Send your picks to friends. When they add your plan, your initials show on everything you're going to.</p>
+    <label for="myName" class="sr">Your name</label>
+    <input type="text" id="myName" placeholder="Your name" value="${esc(myName)}" autocomplete="given-name">
+    <div class="row" style="margin-top:10px"><button class="btn rose" data-share>Share my plan</button>${dlReady?`<button class="btn alt" data-ics>Add to calendar</button>`:""}</div>
+    <textarea id="shareOut" readonly style="display:none;margin-top:10px" aria-label="Your plan to copy"></textarea></div>`;
+  out += `<div class="panel"><h3>Your crew</h3>
+    <p>Paste a message a friend shared from this app to see their picks alongside yours.</p>
+    <textarea id="paste" placeholder="Paste a friend's shared plan here" aria-label="Friend's shared plan"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" data-addfriend>Add their plan</button></div>
+    ${friends.length ? `<div style="margin-top:12px">${friends.map((f,i)=>`<div class="friend"><span class="who"><i>${esc(initials(f.name))}</i>${esc(f.name)} <span style="color:var(--muted);font-size:13px">${f.ids.length} picks</span></span><button data-rmfriend="${i}">Remove</button></div>`).join("")}</div>
+      <label class="toggle"><input type="checkbox" id="crewToggle" ${showCrew?"checked":""}> Show crew picks in my plan</label>` : ""}
+  </div>`;
+  return out;
+}
+
+function render(){
+  renderDays(); renderChips();
+  document.getElementById("planCount").textContent = stars.size ? `(${stars.size})` : "";
+  document.getElementById("count").textContent = `${GIGS.length} events`;
+  const tab = state.view==="venue" ? "venues" : state.view;
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.view===tab ? "page" : "false"));
+  const sw = document.getElementById("searchWrap");
+  sw.style.display = (state.view==="list" || state.view==="venues") ? "" : "none";
+  document.getElementById("q").placeholder = state.view==="venues" ? "Find a venue…" : "Search acts, venues, styles…";
+  const main = document.getElementById("main");
+  if (window.scrollY < 4) hdrHidden = false;
+  const ttOld = document.getElementById("tt"); const ttPos = ttOld ? [ttOld.scrollLeft, ttOld.scrollTop] : null;
+  main.innerHTML = state.view==="list" ? renderList() : state.view==="venues" ? renderVenues() : state.view==="venue" ? renderVenue() : renderPlan();
+  setHeaderVar();
+  const ttNew = document.getElementById("tt");
+  if (ttNew){ if (ttPos && ttNew.dataset.day===ttScrollKey){ ttNew.scrollLeft=ttPos[0]; ttNew.scrollTop=ttPos[1]; } else positionGrid(); }
+  if (state.sheet) fillSheet();
+}
+function rerenderKeepScroll(){ const y=window.scrollY; render(); window.scrollTo(0,y); }
+
+// ---------- detail sheet ----------
+const sheetEl = document.getElementById("sheet"), scrimEl = document.getElementById("scrim");
+let lastFocus = null;
+function altRow(o){
+  const live = isLive(o), past = isPast(o);
+  return `<button class="alt${past?" past":""}" data-open="${o.id}"><b>${DAYS[o.day].short} ${DAYS[o.day].date}<small>${hhmm(o.s)} to ${hhmm(o.e)}</small></b>
+    <span class="vn">${venueLabel(o)}${live?' <span class="tag live">On now</span>':""}${clashWith(o).length && !stars.has(o.id)?' <span class="tag clash">Clashes with your plan</span>':""}</span>
+    <span aria-hidden="true">${stars.has(o.id)?'<span style="color:var(--rose)">★</span>':"›"}</span></button>`;
+}
+function fillSheet(){
+  const g = BY_ID[state.sheet]; if (!g) return closeSheet();
+  const on = stars.has(g.id);
+  const others = BY_ACT[g.ai].filter(o => o!==g).sort((a,b)=>absStart(a)-absStart(b));
+  const clashes = clashWith(g);
+  const crew = friendsFor(g.id);
+  const nextHere = (BY_AREA[g.area]||[]).filter(o => o!==g && o.ai!==g.ai && o.day===g.day && o.room===g.room && o.s >= g.e - 5).sort((a,b)=>a.s-b.s)[0];
+  const chg = changeNote(g);
+  sheetEl.innerHTML = `<div class="grab" aria-hidden="true"></div>
+    <button class="x" data-close aria-label="Close">×</button>
+    <p class="when">${DAYS[g.day].name} ${DAYS[g.day].date} October, ${hhmm(g.s)} to ${hhmm(g.e)}</p>
+    <h2 id="sheetTitle">${esc(g.act)}</h2>
+    ${g.desc?`<p class="d">${esc(g.desc)}</p>`:""}
+    <div class="tags">${g.cx?'<span class="tag cxl">Cancelled</span>':""}${isLive(g)&&!g.cx?'<span class="tag live">On now</span>':""}${g.join?'<span class="tag join">Join in</span>':""}${chg?`<span class="tag chg">${esc(chg)}</span>`:""}</div>
+    <button class="where" data-venue="${esc(g.area)}" data-vday="${g.day}"><span><b>${esc(g.area)}</b>${g.room?`<small>${esc(g.room)}</small>`:""}</span><span class="go">Venue line-up ›</span></button>
+    <div class="act">
+      <button class="btn ${on?"alt":"rose"}" data-star="${g.id}" aria-pressed="${on}">${on?"★ In my plan":"☆ Add to my plan"}</button>
+      ${g.url?`<a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Book tickets</a>`:""}
+    </div>
+    ${clashes.length?`<p class="note bad">Clashes with ${clashes.map(c=>esc(c.act)+" ("+hhmm(c.s)+")").join(", ")} in your plan</p>`:""}
+    ${crew.length?`<p class="note">Going: ${esc(crew.map(f=>f.name).join(", "))}</p>`:""}
+    <h4>${others.length ? `Other times ${esc(g.act)} is on` : "Other times"}</h4>
+    ${others.length ? `<div>${others.map(altRow).join("")}</div>` : `<p class="note">This is their only slot at the festival.</p>`}
+    ${nextHere?`<h4>Straight after, same stage</h4><div>${altRowAct(nextHere)}</div>`:""}`;
+}
+function altRowAct(o){
+  return `<button class="alt" data-open="${o.id}"><b>${hhmm(o.s)}<small>to ${hhmm(o.e)}</small></b><span class="vn">${esc(o.act)}${o.desc?` <em>${esc(o.desc)}</em>`:""}</span><span aria-hidden="true">›</span></button>`;
+}
+function openSheet(id, push=true){
+  if (!BY_ID[id]) return;
+  const wasOpen = !!state.sheet;
+  state.sheet = id;
+  if (!wasOpen) lastFocus = document.activeElement;
+  fillSheet();
+  sheetEl.scrollTop = 0;
+  if (!wasOpen){
+    sheetEl.hidden = false; scrimEl.hidden = false;
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(()=>{ sheetEl.classList.add("open"); scrimEl.classList.add("open"); });
+  }
+  if (push) history.pushState({sheet:id, view:state.view, venue:state.venue}, "");
+  setTimeout(()=>sheetEl.querySelector(".x")?.focus({preventScroll:true}), 30);
+}
+function closeSheet(fromPop=false){
+  if (!state.sheet) return;
+  state.sheet = null;
+  sheetEl.classList.remove("open"); scrimEl.classList.remove("open");
+  document.body.style.overflow = "";
+  setTimeout(()=>{ if (!state.sheet){ sheetEl.hidden = true; scrimEl.hidden = true; } }, 260);
+  if (!fromPop && history.state && history.state.sheet) history.back();
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus({preventScroll:true});
+}
+function showChanges(){
+  const c = DATA.c;
+  const rows = c.changed.map(x => BY_ID[x.id]).filter(Boolean).sort((a,b)=>absStart(a)-absStart(b));
+  state.sheet = "__changes";
+  sheetEl.innerHTML = `<div class="grab" aria-hidden="true"></div><button class="x" data-close aria-label="Close">×</button>
+    <p class="when">Updated ${esc(c.ver)}</p><h2 id="sheetTitle">What's changed</h2>
+    <h4>Added or changed</h4>${rows.map(g=>`<button class="alt" data-open="${g.id}"><b>${DAYS[g.day].short} ${DAYS[g.day].date}<small>${hhmm(g.s)} to ${hhmm(g.e)}</small></b><span class="vn">${esc(g.act)} <em>${esc(g.area)}</em><br><span style="font-size:13px;color:var(--rose)">${esc(changeNote(g))}</span></span><span aria-hidden="true">›</span></button>`).join("")}
+    ${c.gone.length?`<h4>Cancelled</h4>${c.gone.map(g=>`<div class="alt" style="cursor:default"><b>${DAYS[g.day].short} ${DAYS[g.day].date}<small>${hhmm(g.s)} to ${hhmm(g.e)}</small></b><span class="vn"><s>${esc(g.act)}</s> <em>${esc(g.area)}</em></span><span></span></div>`).join("")}`:""}`;
+  lastFocus = document.activeElement;
+  sheetEl.hidden = false; scrimEl.hidden = false; document.body.style.overflow="hidden";
+  requestAnimationFrame(()=>{ sheetEl.classList.add("open"); scrimEl.classList.add("open"); });
+  history.pushState({sheet:"__changes"}, "");
+  seenVer = c.ver; store.set("seenVer", seenVer);
+}
+const _fill = fillSheet;
+fillSheet = function(){ if (state.sheet==="__changes") return; _fill(); };
+
+// ---------- navigation ----------
+function openVenue(area, day){
+  state.venue = area; state.vday = Number.isFinite(day) ? day : null; state.vstage = "";
+  if (state.sheet){ state.sheet = null; sheetEl.classList.remove("open"); scrimEl.classList.remove("open"); sheetEl.hidden = true; scrimEl.hidden = true; document.body.style.overflow=""; }
+  state.prevView = state.view==="venue" ? state.prevView : state.view;
+  state.view = "venue";
+  history.pushState({view:"venue", venue:area}, "");
+  render(); window.scrollTo(0,0); hdrHidden=false; applyStick();
+}
+window.addEventListener("popstate", e => {
+  const s = e.state || {};
+  if (state.sheet && !s.sheet){ closeSheet(true); if (s.view===state.view) return; }
+  if (s.sheet && s.sheet!=="__changes"){
+    const v = s.view || "list";
+    if (v!==state.view || (v==="venue" && s.venue!==state.venue)){ state.view = v; if (s.venue) state.venue = s.venue; render(); }
+    openSheet(s.sheet, false); return; }
+  if (state.view==="venue" && s.view!=="venue"){ state.view = state.prevView || "venues"; render(); window.scrollTo(0,0); hdrHidden=false; applyStick(); }
+  else if (s.view==="venue" && s.venue){ state.venue = s.venue; state.view="venue"; render(); }
+});
+
+// ---------- sharing ----------
+function shareText(){
+  const mine = [...stars].map(id=>BY_ID[id]).filter(Boolean).sort((a,b)=>absStart(a)-absStart(b));
+  const lines = [`${myName || "A friend"}'s Lancaster Music Festival plan`];
+  let lastDay=-1;
+  for (const g of mine){
+    if (g.day!==lastDay){ lines.push("", DAYS[g.day].name.toUpperCase()); lastDay=g.day; }
+    lines.push(`${hhmm(g.s)} ${g.act}, ${g.area}${g.room?" ("+g.room+")":""}`);
+  }
+  lines.push("", "Tap to add my picks to your planner:", crewLink());
+  lines.push("", "Or open the planner, go to My plan, and paste this whole message under Your crew:");
+  lines.push(`LMF26:${encodeURIComponent(myName||"Friend")}:${mine.map(g=>g.id).join(".")}`);
+  return lines.join("\n");
+}
+async function doShare(){
+  if (!stars.size){ toast("Star a few things first"); return; }
+  const text = shareText();
+  try { if (navigator.share){ await navigator.share({text}); return; } } catch(e){ if (e && e.name==="AbortError") return; }
+  try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into a message"); return; } catch(e){}
+  const ta = document.getElementById("shareOut");
+  ta.style.display="block"; ta.value=text; ta.focus(); ta.select();
+  toast("Select all and copy");
+}
+function parseCode(txt){
+  const m = String(txt).match(/LMF26:([^:\s]*):([0-9a-f.]*)/i);
+  if (!m) return null;
+  let name = "Friend"; try { name = decodeURIComponent(m[1]) || "Friend"; } catch(e){}
+  return {name, ids: m[2].split(".").filter(id => BY_ID[id])};
+}
+function addFriend(txt){
+  const p = parseCode(txt);
+  if (!p){ toast("Couldn't find a plan code in that message"); return false; }
+  const i = friends.findIndex(f => f.name.toLowerCase()===p.name.toLowerCase());
+  if (i>=0) friends[i]=p; else friends.push(p);
+  store.set("friends", friends);
+  toast(`Added ${p.name}'s ${p.ids.length} picks`);
+  return true;
+}
+
+// ---------- calendar export ----------
+let downloads = null, dlReady = false;
+function icsDate(day, min){
+  const d = new Date(startOf(day) + min*60000), p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+}
+async function doIcs(){
+  if (!stars.size){ toast("Star a few things first"); return; }
+  const e = s => String(s).replace(/[\\,;]/g, m=>"\\"+m);
+  const ev = [...stars].map(id=>BY_ID[id]).filter(Boolean).map(g => [
+    "BEGIN:VEVENT", `UID:${g.id}@lmf26`, `DTSTAMP:20261001T000000Z`,
+    `DTSTART;TZID=Europe/London:${icsDate(g.day,g.s)}`, `DTEND;TZID=Europe/London:${icsDate(g.day,g.e)}`,
+    `SUMMARY:${e(g.act)}`, `LOCATION:${e(g.area+(g.room?" - "+g.room:"")+", Lancaster")}`,
+    `DESCRIPTION:${e((g.desc||"")+(g.url?" Tickets: "+g.url:""))}`, "END:VEVENT"].join("\r\n"));
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//LMF26 planner//EN","CALSCALE:GREGORIAN", ...ev, "END:VCALENDAR"].join("\r\n");
+  try { await downloads.save({filename:"lmf-2026-plan.ics", data:ics}); } catch(err){ toast("Calendar file not saved"); }
+}
+
+// ---------- toast ----------
+let tt;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2200); }
+
+// ---------- events ----------
+function toggleStar(id){
+  if (stars.has(id)) stars.delete(id); else stars.add(id);
+  store.set("stars",[...stars]);
+  if (stars.has(id)){
+    const c = clashWith(BY_ID[id])[0];
+    toast(c ? `Added. Clashes with ${c.act}` : "Added to your plan");
+  }
+  rerenderKeepScroll();
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("a")) return;
+  const op = e.target.closest("[data-open]");
+  const b = e.target.closest("button");
+  if (b && b.dataset.star){ toggleStar(b.dataset.star); return; }
+  if (b && b.dataset.venue){ openVenue(b.dataset.venue, b.dataset.vday!==undefined ? +b.dataset.vday : null); return; }
+  if (op){ openSheet(op.dataset.open, !state.sheet); return; }
+  if (e.target===scrimEl || (b && "close" in b.dataset)){ closeSheet(); return; }
+  if (!b) return;
+  if ("changes" in b.dataset){ showChanges(); rerenderKeepScroll(); return; }
+  if ("back" in b.dataset){ if (history.state && history.state.view==="venue") history.back(); else { state.view = state.prevView || "venues"; render(); } return; }
+  if (b.dataset.vmode){ state.vmode=b.dataset.vmode; store.set("vmode",state.vmode); ttScrollKey=""; render(); return; }
+  if (b.dataset.vdaypick){ state.vday=+b.dataset.vdaypick; rerenderKeepScroll(); return; }
+  if (b.dataset.vstage!==undefined){ state.vstage=b.dataset.vstage; rerenderKeepScroll(); return; }
+  if (b.dataset.day){ ttScrollKey=""; state.day=+b.dataset.day; state.now=false; if (state.view==="list"){ state.q=""; qEl.value=""; document.getElementById("searchWrap").classList.remove("has"); } render(); window.scrollTo(0,0); hdrHidden=false; applyStick(); return; }
+  if (b.dataset.filter){ state.filter=b.dataset.filter; render(); return; }
+  if ("now" in b.dataset){ state.now=!state.now; render(); window.scrollTo(0,0); hdrHidden=false; applyStick(); return; }
+  if ("hidepast" in b.dataset){ state.hidePast=!state.hidePast; render(); return; }
+  if (b.dataset.view){
+    state.view=b.dataset.view; state.q=""; qEl.value=""; document.getElementById("searchWrap").classList.remove("has");
+    render(); window.scrollTo(0,0); hdrHidden=false; applyStick(); return; }
+  if ("share" in b.dataset){ doShare(); return; }
+  if ("copyplan" in b.dataset){
+    if (!stars.size){ toast("Star a few things first"); return; }
+    const link = planLink();
+    navigator.clipboard.writeText(link).then(() => toast("Plan link copied. Save it in Notes or send it to yourself"), () => {
+      const i = document.getElementById("planLinkOut"); i.style.display="block"; i.value=link; i.focus(); i.select(); toast("Select the link and copy it"); });
+    return; }
+  if ("ics" in b.dataset){ doIcs(); return; }
+  if ("cleargone" in b.dataset){ goneStars.length = 0; store.set("stars",[...stars]); render(); return; }
+  if ("addfriend" in b.dataset){ if (addFriend(document.getElementById("paste").value)) render(); return; }
+  if (b.dataset.rmfriend){ const f=friends.splice(+b.dataset.rmfriend,1)[0]; store.set("friends",friends); toast(`Removed ${f.name}`); render(); return; }
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Escape" && state.sheet){ closeSheet(); return; }
+  if ((e.key==="Enter" || e.key===" ") && e.target.matches && e.target.matches(".b[data-open]")){ e.preventDefault(); openSheet(e.target.dataset.open); }
+});
+document.addEventListener("input", e => { if (e.target.id==="myName"){ myName=e.target.value.trim(); store.set("name",myName); } });
+document.addEventListener("change", e => { if (e.target.id==="crewToggle"){ showCrew=e.target.checked; store.set("showCrew",showCrew); render(); } });
+let qt;
+const qEl = document.getElementById("q");
+qEl.addEventListener("input", () => {
+  document.getElementById("searchWrap").classList.toggle("has", !!qEl.value);
+  clearTimeout(qt); qt=setTimeout(()=>{ state.q=qEl.value.trim().toLowerCase(); state.now=false; render(); window.scrollTo(0,0); hdrHidden=false; applyStick(); },150);
+});
+document.getElementById("qClear").addEventListener("click", () => { qEl.value=""; state.q=""; document.getElementById("searchWrap").classList.remove("has"); render(); qEl.focus(); });
+window.addEventListener("resize", setHeaderVar);
+
+function readHash(){
+  let h = ""; try { h = decodeURIComponent(location.hash.slice(1)); } catch(e){ return; }
+  if (!h) return;
+  if (h.includes("LMF26")){ addFriend(h); return; }
+  let m = h.match(/^p~([0-9a-f.]+)$/i);
+  if (m){
+    const ids = m[1].split(".").filter(id => BY_ID[id]);
+    let n = 0; ids.forEach(id => { if (!stars.has(id)){ stars.add(id); n++; } });
+    if (n){ store.set("stars", [...stars]); }
+    toast(n ? `Plan restored: ${n} show${n>1?"s":""} added back` : "Your plan is up to date");
+    state.view = "plan"; return;
+  }
+  m = h.match(/^c~([A-Za-z0-9_]{1,30})~([0-9a-f.]*)$/i);
+  if (m){
+    const name = m[1].replace(/_/g," ").trim() || "Friend";
+    const ids = m[2].split(".").filter(id => BY_ID[id]);
+    const i = friends.findIndex(f => f.name.toLowerCase()===name.toLowerCase());
+    if (i>=0) friends[i] = {name, ids}; else friends.push({name, ids});
+    store.set("friends", friends);
+    toast(`Added ${name}'s ${ids.length} picks to your crew`);
+    state.view = "plan";
+  }
+}
+readHash();
+window.addEventListener("hashchange", () => { readHash(); render(); });
+history.replaceState({view:"list"}, "");
+render();
+setInterval(() => { const a=document.activeElement; if (!state.sheet && (!a || !["INPUT","TEXTAREA"].includes(a.tagName))) rerenderKeepScroll(); }, 60000);
+
+if (IN_CLAUDE) initCloud(); else {
+  cloudState = "off";
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+(async () => {
+  try {
+    if (window.claude && window.claude.use){ downloads = await window.claude.use("downloads"); dlReady = !!downloads; if (dlReady && state.view==="plan") render(); }
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
